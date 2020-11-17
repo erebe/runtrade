@@ -1,0 +1,15 @@
+apiVersion: skaffold/v2beta8
+kind: Config
+metadata:
+  name: runtrade
+build:
+  local:
+    useBuildkit: true
+    #  artifacts:
+    #  - image: erebe/couber
+deploy:
+  kubectl:
+    defaultNamespace: "runtrade"
+    manifests:
+    - k8s/secrets_decrypted/*.yml
+    - k8s/*.yml
