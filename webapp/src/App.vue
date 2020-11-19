@@ -9,6 +9,7 @@ import HelloWorld from './components/HelloWorld.vue';
 import Keycloak from 'keycloak-js'
 
 const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtrade-dev', clientId: 'webapp'});
+(window as any) .keycloak = keycloak;
 
 keycloak.init({}).then((auth) => {
 

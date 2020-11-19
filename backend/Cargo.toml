@@ -1,0 +1,37 @@
+[package]
+name = "runTradeBackend"
+version = "0.1.0"
+authors = ["Romain GERARD <r.gerard@erebe.eu"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[features]
+default = []
+
+# To run functional tests during cargo test
+# Require a properly setup postgres DB and valid .env file
+functional_tests = []
+
+
+[[bin]]
+name = "runtrade-backend"
+path = "src/main.rs"
+
+[dependencies]
+log = "0.4.11"
+env_logger = "0.7"
+
+actix-web = "3"
+actix-files = "0.4.0"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+json = "0.12"
+
+diesel = { version = "1.4.5", features = ["postgres", "chrono", "r2d2"] }
+diesel-derive-enum = { version = "1.1.0", features = ['postgres'] }
+r2d2 = "0.8.9"
+dotenv = "0.15.0"
+chrono = { version = "0.4.19", features = ["serde"] }
