@@ -3,7 +3,6 @@ extern crate diesel;
 extern crate dotenv;
 
 mod db;
-mod schema;
 mod api;
 
 use crate::db::get_postgres_connection_pool;
@@ -25,13 +24,15 @@ async fn main() -> std::io::Result<()> {
     let db_pool = get_postgres_connection_pool(&database_url)
         .expect("Cannot create postgres connection pool");
 
-    let port = std::env::var("PORT").unwrap_or("8080".to_string());
+    let port = std::env::var("PORT").unwrap_or("8081".to_string());
     HttpServer::new(move || App::new()
+        .wrap(middleware::DefaultHeaders::new().header("Access-Control-Allow-Origin", "http://localhost:8080"))
         .wrap(middleware::Logger::default())
         .data(db_pool.clone())
         .data(web::JsonConfig::default().limit(4096))
         .service(api::routes::get_user_by_id)
         .service(api::routes::get_user_by_name)
+        .service(api::routes::find_events)
     )
         .bind(format!("0.0.0.0:{}", &port))?
         .run()

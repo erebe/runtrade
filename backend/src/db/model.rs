@@ -4,6 +4,7 @@
 
 use diesel_derive_enum::DbEnum;
 use chrono::NaiveDateTime;
+use chrono::naive::serde::ts_seconds;
 use serde::Serialize;
 
 #[derive(DbEnum, Serialize, Debug)]
@@ -29,6 +30,7 @@ pub struct Event {
     pub name: String,
     pub event_type: Event_type,
     pub localisation: String,
+    #[serde(with = "ts_seconds")]
     pub event_date: NaiveDateTime,
     pub event_link: String,
 }

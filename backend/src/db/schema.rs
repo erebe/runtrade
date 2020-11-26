@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 table! {
     use diesel::sql_types::*;
     use crate::db::model::{Event_typeMapping, Inscription_intentMapping};
@@ -5,7 +7,7 @@ table! {
     events (id) {
         id -> Int4,
         name -> Text,
-        event_type -> Event_type,
+        event_type -> Event_typeMapping,
         localisation -> Text,
         event_date -> Timestamp,
         event_link -> Text,
@@ -22,7 +24,7 @@ table! {
         event_id -> Int4,
         distance -> Text,
         price -> Float4,
-        intent -> Inscription_intent,
+        intent -> Inscription_intentMapping,
         created_at -> Timestamp,
     }
 }

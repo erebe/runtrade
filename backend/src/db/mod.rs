@@ -2,6 +2,7 @@ use diesel::PgConnection;
 use diesel::r2d2::ConnectionManager;
 use r2d2::Pool;
 
+pub mod schema;
 pub mod model;
 pub mod insertables;
 pub mod operations;

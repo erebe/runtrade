@@ -1,6 +1,6 @@
-use crate::schema::{events, users, inscriptions};
 use chrono::NaiveDateTime;
-use crate::db::model::{Event_type, Inscription_intent};
+use super::schema::{events, users, inscriptions};
+use super::model::{Event_type, Inscription_intent};
 
 #[derive(Insertable, AsChangeset, PartialEq, Debug)]
 #[table_name="users"]
@@ -15,10 +15,11 @@ pub struct NewUser<'a> {
 #[derive(Insertable, AsChangeset, Debug)]
 #[table_name="events"]
 pub struct NewEvent<'a> {
+    pub name: &'a str,
     pub event_type: &'a Event_type,
     pub localisation: &'a str,
     pub event_date: &'a NaiveDateTime,
-    pub event_link: Option<String>,
+    pub event_link: &'a str,
 }
 #[derive(Insertable, AsChangeset, Debug)]
 #[table_name="inscriptions"]

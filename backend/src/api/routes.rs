@@ -4,6 +4,17 @@ use crate::db;
 
 use std::borrow::Borrow;
 
+#[get("/api/v1/events/{name}")]
+pub async fn find_events(path: web::Path<String>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let res = web::block(move || {
+        db::operations::find_events(db.get().unwrap().borrow(), path.0.as_str())
+    })
+        .await
+        .map(|events| HttpResponse::Ok().json(events))
+        .map_err(|err| HttpResponse::InternalServerError().body(err.to_string()))?;
+    Ok(res)
+}
+
 #[get("/api/v1/user/id/{id}")]
 pub async fn get_user_by_id(path: web::Path<i32>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
