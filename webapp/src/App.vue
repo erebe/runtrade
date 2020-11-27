@@ -3,7 +3,7 @@
       <span class="mr-2">
           <img src="favicon.png" id="logo">
       </span>
-    <h5 class="my-0 mr-md-auto font-weight-normal">RunTrade</h5>
+    <h5 class="my-0 mr-md-auto font-weight-normal">RunTrade </h5>
     <span id="signin-logo"><img src="images/header.jpg"></span>
     <nav class="my-2 my-md-0 mr-md-3">
 <!--      <a class="p-2 text-dark" href="#">Your trades</a>-->
@@ -18,13 +18,13 @@
   <!--</div>-->
 
   <div class="container">
-    <Steps event=""></Steps>
+    <SearchEvent event=""></SearchEvent>
   </div>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
-import Steps from "@/components/steps.vue";
+import SearchEvent from "@/components/SearchEvent.vue";
 import Keycloak from 'keycloak-js'
 
 const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtrade-dev', clientId: 'webapp'});
@@ -32,7 +32,7 @@ const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtr
 
 @Options({
   components: {
-    Steps,
+    SearchEvent,
   },
   data() {
     return {

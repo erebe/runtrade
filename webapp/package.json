@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@types/axios": "^0.14.0",
+    "@types/bootstrap": "^5.0.0",
     "@types/datatables.net": "^1.10.19",
     "@types/feather-icons": "^4.7.0",
     "@types/lodash": "^4.14.165",

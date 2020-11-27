@@ -104,12 +104,14 @@ mod test {
     use std::env;
 
     use chrono::NaiveDateTime;
-    use diesel::{Connection, PgConnection, QueryResult};
+    use diesel::{Connection, PgConnection, QueryResult, ExpressionMethods, RunQueryDsl};
     use dotenv::dotenv;
 
     use crate::db::insertables::{NewEvent, NewUser};
     use crate::db::model::{Event, Event_type};
     use crate::db::operations::{create_event, create_user, find_events, update_user};
+    use crate::db::schema::events::dsl::events;
+    use crate::db::schema::events::columns::event_date;
 
     fn establish_connection() -> PgConnection {
         dotenv().ok();
@@ -158,17 +160,20 @@ mod test {
     fn test_find_events() {
         let conn = establish_connection();
 
-        for ix in 1..200 {
-            let nam = format!("toto{}", ix);
-            let mut event = NewEvent {
-                name: nam.as_str(),
-                event_type: &Event_type::Run,
-                localisation: "Paris",
-                event_date: &NaiveDateTime::from_timestamp(1606313552, 0),
-                event_link: "https://google.com",
-            };
-            let ev = create_event(&conn, &event).unwrap();
-        };
+        // for ix in 1..200 {
+        //     let nam = format!("toto{}", ix);
+        //     let mut event = NewEvent {
+        //         name: nam.as_str(),
+        //         event_type: &Event_type::Run,
+        //         localisation: "Paris",
+        //         event_date: &NaiveDateTime::from_timestamp(1606313552, 0),
+        //         event_link: "https://google.com",
+        //     };
+        //     let ev = create_event(&conn, &event).unwrap();
+        // };
+
+        diesel::update(events).set(event_date.eq(NaiveDateTime::from_timestamp(1706313552, 0)))
+            .execute(&conn);
 
         //let events: QueryResult<Vec<Event>> = find_events(&conn, "tot");
         //assert_eq!(events.unwrap().len(), 1);
