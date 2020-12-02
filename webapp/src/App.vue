@@ -93,11 +93,8 @@ const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtr
   },
   watch: {
     events: function (newVal, _oldVal) {
-      if(!_.isEmpty(newVal)) {
         this.displaySelectEvent = true;
         this.displayTrade = false;
-        console.log(this);
-      }
     },
 
     inscriptions: function (newVal, _oldVal) {
