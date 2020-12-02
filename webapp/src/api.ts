@@ -5,5 +5,5 @@ export function findEventByName(eventName: string): Promise<AxiosResponse> {
 }
 
 export function getInscriptionForEvent(eventId: number): Promise<AxiosResponse> {
-    return Axios.get('http://localhost:8081/api/v1/inscriptions/' + eventId);
+    return Axios.get('http://localhost:8081/api/v1/inscriptions/event_id/' + eventId);
 }

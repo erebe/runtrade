@@ -24,6 +24,12 @@ pub enum Inscription_intent {
     Sell,
 }
 
+#[derive(DbEnum, Serialize, Debug)]
+pub enum Gender {
+    Man,
+    Women
+}
+
 #[derive(Queryable, Serialize, Debug)]
 pub struct Event {
     pub id: i32,
@@ -41,9 +47,12 @@ pub struct Inscription {
     pub user_id: i32,
     pub event_id: i32,
     pub distance: String,
-    pub price: f64,
+    pub price: f32,
     pub intent: Inscription_intent,
+    #[serde(with = "ts_seconds")]
     pub created_at: NaiveDateTime,
+    pub note: String,
+    pub gender: Gender,
 }
 
 #[derive(Queryable, Serialize, Debug)]

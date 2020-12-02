@@ -39,6 +39,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::routes::get_user_by_id)
             .service(api::routes::get_user_by_name)
             .service(api::routes::find_events)
+            .service(api::routes::get_inscriptions_by_event_id)
     }
     )
         .bind(format!("0.0.0.0:{}", &port))?

@@ -1,6 +1,6 @@
 table! {
     use diesel::sql_types::*;
-    use crate::db::model::{Event_typeMapping, Inscription_intentMapping};
+    use crate::db::model::{Event_typeMapping, Inscription_intentMapping, GenderMapping};
 
     events (id) {
         id -> Int4,
@@ -14,7 +14,7 @@ table! {
 
 table! {
     use diesel::sql_types::*;
-    use crate::db::model::{Event_typeMapping, Inscription_intentMapping};
+    use crate::db::model::{Event_typeMapping, Inscription_intentMapping, GenderMapping};
 
     inscriptions (id) {
         id -> Int4,
@@ -24,12 +24,14 @@ table! {
         price -> Float4,
         intent -> Inscription_intent,
         created_at -> Timestamp,
+        note -> Text,
+        gender -> Gender,
     }
 }
 
 table! {
     use diesel::sql_types::*;
-    use crate::db::model::{Event_typeMapping, Inscription_intentMapping};
+    use crate::db::model::{Event_typeMapping, Inscription_intentMapping, GenderMapping};
 
     users (id) {
         id -> Int4,

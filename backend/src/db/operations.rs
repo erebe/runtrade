@@ -9,6 +9,8 @@ use super::model::{Event, User};
 use super::schema::events::columns::{event_date, event_link, localisation, name};
 use super::schema::events::dsl::events;
 use super::schema::users::dsl::{id, users};
+use crate::db::model::Inscription;
+use chrono::format::Numeric::Timestamp;
 
 const MAX_RESULTS: i64 = 200;
 
@@ -96,7 +98,24 @@ pub fn delete_event(conn: &PgConnection, event_id: i32) -> QueryResult<usize> {
 //
 // INSCRIPTION
 //
+pub fn get_inscription_by_event_id(conn: &PgConnection, event_ids: i32) -> QueryResult<Vec<(Inscription, User, Event)>> {
+    use super::schema::inscriptions::dsl::*;
 
+    inscriptions.filter(event_id.eq(&event_ids))
+        .inner_join(users)
+        .inner_join(events)
+        .load::<(Inscription, User, Event)>(conn)
+}
+pub fn upsert_inscription(conn: &PgConnection, inscription: &NewInscriptions) -> QueryResult<Inscription> {
+    use super::schema::inscriptions::dsl::*;
+
+    diesel::insert_into(inscriptions)
+        .values(inscription)
+        .on_conflict(id)
+        .do_update()
+        .set(created_at.eq(Utc::now().naive_utc()))
+        .get_result(conn)
+}
 
 #[cfg(feature = "functional_tests")]
 #[cfg(test)]
@@ -107,9 +126,9 @@ mod test {
     use diesel::{Connection, PgConnection, QueryResult, ExpressionMethods, RunQueryDsl};
     use dotenv::dotenv;
 
-    use crate::db::insertables::{NewEvent, NewUser};
-    use crate::db::model::{Event, Event_type};
-    use crate::db::operations::{create_event, create_user, find_events, update_user};
+    use crate::db::insertables::{NewEvent, NewUser, NewInscriptions};
+    use crate::db::model::{Event, Event_type, Inscription_intent, Gender};
+    use crate::db::operations::{create_event, create_user, find_events, update_user, upsert_inscription};
     use crate::db::schema::events::dsl::events;
     use crate::db::schema::events::columns::event_date;
 
@@ -156,7 +175,7 @@ mod test {
     }
 
 
-    #[test]
+    //#[test]
     fn test_find_events() {
         let conn = establish_connection();
 
@@ -177,5 +196,97 @@ mod test {
 
         //let events: QueryResult<Vec<Event>> = find_events(&conn, "tot");
         //assert_eq!(events.unwrap().len(), 1);
+    }
+    
+    #[test]
+    fn create_fake_date() {
+        let user1 = NewUser {
+            name: "erebe",
+            email: "erebe@erebe.eu",
+            contact_1: "facebook: https://www.facebook.com/erebe.dellu.16",
+            contact_2: "email: nemesia.lilith@gmail.com",
+            contact_3: "telephone: 336597126xx"
+        };
+        let user2 = NewUser {
+            name: "Romain Gerard",
+            email: "romain.gerard@erebe.eu",
+            contact_1: "facebook: https://www.facebook.com/erebe.dellu.16",
+            contact_2: "email: nemesia.lilith@gmail.com",
+            contact_3: "telephone: 336597126xx"
+        };
+        let conn = establish_connection();
+        let us1 = create_user(&conn, &user1).unwrap();
+        let us2 = create_user(&conn, &user2).unwrap();
+
+        let event1 = NewEvent {
+            name: "Marathon Valence",
+            event_type: &Event_type::Run,
+            localisation: "Valence Spain",
+            event_date: &NaiveDateTime::from_timestamp(1706313552, 0),
+            event_link: "https://www.valenciaciudaddelrunning.com/fr/marathon_fr/42k/"
+        };
+        let event2 = NewEvent {
+            name: "Semi de Deauville",
+            event_type: &Event_type::Run,
+            localisation: "Deauville",
+            event_date: &NaiveDateTime::from_timestamp(1706313552, 0),
+            event_link: "https://www.marathondeauville.fr/"
+        };
+        let event3 = NewEvent {
+            name: "Blagnac",
+            event_type: &Event_type::Run,
+            localisation: "Blagnac",
+            event_date: &NaiveDateTime::from_timestamp(1615109893, 0),
+            event_link: "http://www.semi-blagnac.com/pages/index.php"
+        };
+        let ev1 = create_event(&conn, &event1).unwrap();
+        let ev2 = create_event(&conn, &event2).unwrap();
+        let ev3 = create_event(&conn, &event3).unwrap();
+        
+        let inscription1 = NewInscriptions {
+            user_id: us1.id,
+            event_id: ev1.id,
+            distance: "42km",
+            price: 64.0,
+            intent: &Inscription_intent::Buy,
+            created_at: &NaiveDateTime::from_timestamp(1606815825, 0),
+            note: "42Km c'est trop long",
+            gender: &Gender::Women,
+        };
+        let inscription2 = NewInscriptions {
+            user_id: us2.id,
+            event_id: ev2.id,
+            distance: "21km",
+            price: 23.0,
+            intent: &Inscription_intent::Sell,
+            created_at: &NaiveDateTime::from_timestamp(1606815825, 0),
+            note: "Blessure genoux",
+            gender: &Gender::Man,
+        };
+        let inscription3 = NewInscriptions {
+            user_id: us1.id,
+            event_id: ev1.id,
+            distance: "10km",
+            price: 30.0,
+            intent: &Inscription_intent::Buy,
+            created_at: &NaiveDateTime::from_timestamp(1606815825, 0),
+            note: "je veux le faire parceque courrir c'est trop bien pour ton corps de grande malade. Vive le F1",
+            gender: &Gender::Women,
+        };
+        let inscription4 = NewInscriptions {
+            user_id: us1.id,
+            event_id: ev1.id,
+            distance: "21km",
+            price: 30.0,
+            intent: &Inscription_intent::Sell,
+            created_at: &NaiveDateTime::from_timestamp(1606815825, 0),
+            note: "Il pleut",
+            gender: &Gender::Women,
+        };
+
+        upsert_inscription(&conn, &inscription1).unwrap();
+        upsert_inscription(&conn, &inscription2).unwrap();
+        upsert_inscription(&conn, &inscription3).unwrap();
+        upsert_inscription(&conn, &inscription4).unwrap();
     }
 }

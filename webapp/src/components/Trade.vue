@@ -7,7 +7,7 @@
         <span class="col-sm-2 col-0"></span>
         <span>
           <h4 class="my-sm-0 font-weight-normal">
-            <span><img src="images/go.png"></span>  Trade
+            <span><img src="/images/go.png"></span>  Trade
           </h4>
         </span>
         <span class="mx-0 px-0 d-inline-flex align-items-center">
@@ -35,35 +35,19 @@
           </tr>
           </thead>
           <tbody>
-          <tr class="table-primary">
-            <td>Sandrine</td>
-            <td><i data-feather="crosshair"></i>  Buy</td>
-            <td>Marathon Valencia</td>
-            <td>42Km</td>
-            <td>Women</td>
-            <td>Running</td>
-            <td>64€</td>
-            <td>v</td>
+          <tr v-for="inscription in inscriptions" :key="inscription.id" :class="(inscription[0].intent === 'Buy') ? 'table-primary': 'table-success'">
+            <td>{{ inscription[1].name }}</td>
+            <td>
+              <i :data-feather="(inscription[0].intent === 'Buy') ? 'crosshair': 'dollar-sign'"></i> {{ inscription[0].intent }}
+            </td>
+            <td>{{ inscription[2].name }}</td>
+            <td>{{ inscription[0].distance }}</td>
+            <td>{{ inscription[0].gender }}</td>
+            <td>{{ inscription[2].event_type}}</td>
+            <td>{{ inscription[0].price }} €</td>
+            <td style="width: 150px" class="text-justify">{{ inscription[0].note }}</td>
           </tr>
-          <tr class="table-success">
-            <td>Theo</td>
-            <td><i data-feather="dollar-sign"></i>  Sell</td>
-            <td>Marathon Valencia</td>
-            <td>10Km</td>
-            <td>Women</td>
-            <td>Running</td>
-            <td>32€</td>
-            <td>v</td>
-          </tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>33€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>33€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>33€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>33€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>33€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>36€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>35€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>32€</td> <td></td></tr>
-          <tr class="table-primary"><td>Richard</td> <td><i data-feather="crosshair"></i>  Buy</td> <td>Maratdon Valencia</td><td>42Km</td> <td>Man</td>  <td>Running</td> <td>30€</td> <td></td></tr>
+
           </tbody>
         </table>
       </div>
@@ -96,19 +80,12 @@ import {Popover} from "bootstrap";
     eventSelected(ev: MouseEvent) {
       console.log((ev.target as HTMLTableCellElement).dataset.eventid);
 
-      this.trades = [12];
-
       this.displaySelectEvent = true;
       this.displayChoseTrade = true;
 
       document.getElementById("tradesContainer")?.scrollIntoView({behavior: "smooth"});
 
     },
-    formatDate(timestamp: number) {
-      const date = new Date(timestamp * 1000);
-      return '' + date.getFullYear() + '-' + date.getMonth() + '-' + date.getDay();
-    },
-
     init() {
       feather.replace();
       this.datatable = $('#trades').DataTable({pageLength: 50, deferRender: true});
@@ -116,6 +93,7 @@ import {Popover} from "bootstrap";
     }
   },
   mounted() {
+    console.log(this.inscriptions)
     this.init();
     $('#tradesContainer [data-toggle="popover"]').get().forEach((el) => {
       new Popover(el, {trigger: "hover"});

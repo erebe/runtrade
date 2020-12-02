@@ -8,15 +8,15 @@
         </span>
         <span class="pt-1">
           <h4 class="my-sm-0 font-weight-normal">
-            <span><img src="images/steady.png"></span> Choose your Event
+            <span><img src="/images/steady.png"></span> Choose your Event
           </h4>
         </span>
         <span class="m-0 px-0">
-          <button type="button" class="btn btn btn-block btn-primary"
+          <button type="button" v-on:click="createEvent" class="btn btn btn-block btn-primary"
                   data-container="body" data-toggle="popover" data-placement="right" data-html="true"
                   data-content="Your Event is not here ? <br/> Feel free to add it by providing few information !"
           >
-            <span data-feather="plus"></span> Create your Event
+            <span data-feather="plus"></span> Add an Event
           </button>
         </span>
       </div>
@@ -28,7 +28,7 @@
             <span class="sr-only">Loading...</span>
           </div>
         </span>
-        <table class="table table-sm table-bordered table-hover" id="events" data-order='[[ 3, "desc" ], [1, "asc"]]'>
+        <table class="table table-sm table-bordered table-hover" id="events" data-order='[[3, "asc"], [1, "asc"]]'>
           <thead>
           <tr>
             <th scope="col">Type</th>
@@ -48,7 +48,7 @@
             <td v-bind:data-eventid="event.id">{{ event.name }}</td>
             <td v-bind:data-eventid="event.id">{{ event.localisation }}</td>
             <td v-bind:data-eventid="event.id">{{ formatDate(event.event_date) }}</td>
-            <td v-bind:data-eventid="event.id">
+            <td class="text-justify" v-bind:data-eventid="event.id">
               <a v-bind:href="event.event_link" target="_blank" rel="noopener noreferrer">{{ event.event_link }}</a>
             </td>
           </tr>
@@ -59,7 +59,6 @@
     </div>
   </div>
 
-  <Trade v-if="displayChoseTrade" :inscriptions="inscriptions"></Trade>
 </template>
 
 <script lang="ts">
@@ -74,22 +73,24 @@ import feather from 'feather-icons'
 import {getInscriptionForEvent} from "@/api";
 
 @Options({
-  components: {
-    Trade
-  },
   props: {
-    events: Array
+    events: Array,
+    selectedEvent: Number,
+    inscriptions: Array
   },
+  emits: ['update:selectedEvent', 'update:inscriptions'],
   data: () => {
     return {
-      selectedEvent: null,
       datatable: null,
       retrievingEvent: false,
       displayChoseTrade: false,
-      inscriptions: Array
     }
   },
   methods: {
+    createEvent(ev: MouseEvent) {
+      ev.preventDefault();
+      (window as any).app.keycloak.login();
+    },
     async eventSelected(ev: MouseEvent) {
       // do nothing if user click on a link
       if((ev.target as HTMLElement).nodeName == "A") {
@@ -98,33 +99,28 @@ import {getInscriptionForEvent} from "@/api";
 
       ev.preventDefault();
       this.retrievingEvent = true;
-      await new Promise(resolve => setTimeout(resolve, 2000));
       try {
         // Find events
         const eventId = (ev.target as HTMLTableCellElement).dataset.eventid!
         const response = await getInscriptionForEvent(parseInt(eventId))
-        this.inscriptions = response.data as Array<any>;
-
-        // Transition to new state
-        this.displayChoseTrade = true;
+        this.$emit('update:selectedEvent', eventId);
+        this.$emit('update:inscriptions', response.data);
 
       } catch (error) {
         console.error(error);
       }
-      this.displayChoseTrade = true;
-      this.inscriptions = [];
       this.retrievingEvent = false;
     },
     eventTypeToSvgIconPath(eventType: string) {
       switch (eventType.toLocaleLowerCase()) {
         case 'run':
-          return 'icons/run.svg'
+          return '/icons/run.svg'
         case 'trail':
-          return 'icons/trail.svg'
+          return '/icons/trail.svg'
         case 'bike':
-          return 'icons/bike.svg'
+          return '/icons/bike.svg'
         default:
-          return 'icons/other.svg'
+          return '/icons/other.svg'
 
       }
     },
@@ -133,7 +129,9 @@ import {getInscriptionForEvent} from "@/api";
         "August", "September", "October", "November", "December"];
       const date = new Date(timestamp * 1000);
       //return '' + date.getDay() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
-      return '' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDay();
+      return '' + date.getUTCFullYear() + '-'
+          + ('0' + (date.getUTCMonth() + 1)).slice(-2) + '-'
+          + ('0' + (date.getUTCDate())).slice(-2);
     },
 
     init() {
@@ -158,6 +156,8 @@ import {getInscriptionForEvent} from "@/api";
 })
 export default class SelectEvent extends Vue {
   events!: Array<any>
+  selectedEvent?: number
+  inscriptions!: Array<any>
 }
 </script>
 

@@ -1,6 +1,7 @@
 use chrono::NaiveDateTime;
 use super::schema::{events, users, inscriptions};
 use super::model::{Event_type, Inscription_intent};
+use crate::db::model::Gender;
 
 #[derive(Insertable, AsChangeset, PartialEq, Debug)]
 #[table_name="users"]
@@ -30,4 +31,6 @@ pub struct NewInscriptions<'a> {
     pub price: f32,
     pub intent: &'a Inscription_intent,
     pub created_at: &'a NaiveDateTime,
+    pub note: &'a str,
+    pub gender: &'a Gender,
 }

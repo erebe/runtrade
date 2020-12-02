@@ -21,7 +21,8 @@ CREATE TABLE events
 
 );
 
-CREATE TYPE INSCRIPTION_INTENT AS ENUM ('Buy', 'Sell');
+CREATE TYPE INSCRIPTION_INTENT AS ENUM ('buy', 'sell');
+CREATE TYPE GENDER AS ENUM ('man', 'women');
 
 CREATE TABLE inscriptions
 (
@@ -31,6 +32,8 @@ CREATE TABLE inscriptions
     distance   TEXT               NOT NULL CHECK (distance <> ''),
     price      REAL               NOT NULL CHECK (price >= 0.0),
     intent     INSCRIPTION_INTENT NOT NULL,
-    created_at timestamp          NOT NULL
+    created_at timestamp          NOT NULL,
+    note       TEXT               NOT NULL,
+    gender     GENDER             NOT NULL
 );
 

@@ -1,10 +1,10 @@
 <template>
   <div class="d-flex flex-column flex-md-row align-items-center p-1 px-md-4 mb-3 bg-white border-bottom shadow-sm">
       <span class="mr-2">
-          <img src="favicon.png" id="logo">
+          <img src="/favicon.png" id="logo">
       </span>
     <h5 class="my-0 mr-md-auto font-weight-normal">RunTrade </h5>
-    <span id="signin-logo"><img src="images/header.jpg"></span>
+    <span id="signin-logo"><img src="/images/header.jpg"></span>
     <nav class="my-2 my-md-0 mr-md-3">
 <!--      <a class="p-2 text-dark" href="#">Your trades</a>-->
     </nav>
@@ -18,28 +18,67 @@
   <!--</div>-->
 
   <div class="container">
-    <SearchEvent event=""></SearchEvent>
+    <!--    STEP I-->
+    <SearchEvent :eventSearch="extractEventFromUrl()" v-model:events="this.events"></SearchEvent>
+
+    <!--    STEP II-->
+    <SelectEvent v-if="displaySelectEvent" :events="events"
+                 v-model:selectedEvent="this.selectedEvent"
+                 v-model:inscriptions="this.inscriptions"
+    ></SelectEvent>
+
+    <!--    STEP III-->
+    <Trade v-if="displayTrade" :inscriptions="this.inscriptions"></Trade>
   </div>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
 import SearchEvent from "@/components/SearchEvent.vue";
-import Keycloak from 'keycloak-js'
+import SelectEvent from "@/components/SelectEvent.vue";
+import Trade from "@/components/Trade.vue";
+import Keycloak from 'keycloak-js';
+import _ from 'lodash';
 
 const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtrade-dev', clientId: 'webapp'});
-(window as any) .keycloak = keycloak;
+(window as any).app = { keycloak: keycloak }
 
 @Options({
   components: {
     SearchEvent,
+    SelectEvent,
+    Trade
   },
   data() {
     return {
       logged: false,
       userProfile: {},
-      keycloak: keycloak
+      keycloak: keycloak,
+
+      events: [],
+      selectedEvent: null,
+      inscriptions: [],
+
+      displaySelectEvent: false,
+      displayTrade: false,
     };
+  },
+  methods: {
+    extractEventFromUrl() {
+      const hash = window.location.hash.substr(1);
+      const result = hash.split('&').reduce(function (res: any, item) {
+        const parts = item.split('=');
+        res[parts[0]] = parts[1];
+        return res;
+      }, {});
+
+      const search = (result as any).findEvent;
+      if(!_.isUndefined(search)) {
+        return decodeURI(search);
+      } else {
+        return "";
+      }
+    },
   },
   beforeMount() {
     keycloak.init({onLoad: "check-sso"}).then((auth) => {
@@ -51,6 +90,22 @@ const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtr
         })
       }
     });
+  },
+  watch: {
+    events: function (newVal, _oldVal) {
+      if(!_.isEmpty(newVal)) {
+        this.displaySelectEvent = true;
+        this.displayTrade = false;
+        console.log(this);
+      }
+    },
+
+    inscriptions: function (newVal, _oldVal) {
+      if(!_.isEmpty(newVal)) {
+        this.displayTrade = true;
+        history.pushState(null, "RunTrade", '/event/' + this.selectedEvent + window.location.hash)
+      }
+    }
   }
 })
 export default class App extends Vue {}

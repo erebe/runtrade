@@ -3,7 +3,7 @@
   <div v-if="displayFindEvent" class="card-deck mb-4 text-center">
     <div class="card mb-4 shadow-sm">
       <div class="card-header">
-        <h4 class="my-0 font-weight-normal"><span><img src="images/ready.png"></span>  Find your Event</h4>
+        <h4 class="my-0 font-weight-normal"><span><img src="/images/ready.png"></span>  Find your Event</h4>
       </div>
       <div class="card-body">
         <form v-on:submit="findEvent">
@@ -33,33 +33,26 @@
     </div>
   </div>
 
-  <!--    STEP II-->
-  <SelectEvent v-if="displaySelectEvent" :events="events"></SelectEvent>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
-import SelectEvent from "@/components/SelectEvent.vue";
-import "../api"
+import _ from 'lodash';
 import {findEventByName} from "@/api";
 
 @Options({
-  components: {
-    SelectEvent
-  },
   props: {
-    event: String
+    eventSearch: String,
+    events: Array,
   },
   data: () => {
     return {
       displayFindEvent: true,
       searchingEvent: false,
-      eventName: "",
-
-      displaySelectEvent: false,
-      events: null,
+      eventName: null,
     }
   },
+  emits: ['update:events'],
   methods: {
     async findEvent(ev: Event) {
       ev.preventDefault();
@@ -67,10 +60,14 @@ import {findEventByName} from "@/api";
       try {
         // Find events
         const response = await findEventByName(this.eventName)
-        this.events = response.data as Array<any>;
+        //this.events = response.data as Array<any>;
+        this.$emit('update:events', response.data);
 
         // Transition to new state
         this.displaySelectEvent = true;
+        if(ev.type !== 'none') {
+          window.location.hash = "#findEvent=" + encodeURI(this.eventName);
+        }
 
       } catch (error) {
         console.error(error);
@@ -78,9 +75,16 @@ import {findEventByName} from "@/api";
       this.searchingEvent = false;
     },
   },
+  mounted() {
+    if(!_.isEmpty(this.eventSearch)) {
+      this.eventName = this.eventSearch;
+      this.findEvent(new MouseEvent('none'));
+    }
+  }
 })
-export default class Steps extends Vue {
-  event!: string
+export default class SearchEvent extends Vue {
+  eventSearch!: string
+  events!: Array<any>
 }
 </script>
 
