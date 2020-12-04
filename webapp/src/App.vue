@@ -37,11 +37,7 @@ import { Options, Vue } from 'vue-class-component';
 import SearchEvent from "@/components/SearchEvent.vue";
 import SelectEvent from "@/components/SelectEvent.vue";
 import Trade from "@/components/Trade.vue";
-import Keycloak from 'keycloak-js';
 import _ from 'lodash';
-
-const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtrade-dev', clientId: 'webapp'});
-(window as any).app = { keycloak: keycloak }
 
 @Options({
   components: {
@@ -53,7 +49,6 @@ const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtr
     return {
       logged: false,
       userProfile: {},
-      keycloak: keycloak,
 
       events: [],
       selectedEvent: null,
@@ -81,9 +76,9 @@ const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtr
     },
   },
   beforeMount() {
-    keycloak.init({onLoad: "check-sso"}).then((auth) => {
-      if (keycloak.authenticated) {
-        keycloak.loadUserInfo().then((user) => {
+    this.keycloak().init({onLoad: "check-sso"}).then((auth: boolean) => {
+      if (this.keycloak().authenticated) {
+        this.keycloak().loadUserInfo().then((user: any) => {
           this.userPofile = user;
           this.userProfile.picture = JSON.parse((user as any).picture)['url'];
           this.logged = true;

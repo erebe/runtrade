@@ -3,8 +3,17 @@ use crate::db::DbPool;
 use crate::db;
 
 use std::borrow::Borrow;
+use std::ops::Deref;
 
-#[get("/api/v1/events/{name}")]
+use log::info;
+
+#[put("/api/v1/event")]
+pub async fn add_event(payload: web::Json<serde_json::Value>) -> Result<HttpResponse, Error> {
+    println!("{:?}", payload);
+    Ok(HttpResponse::Ok().json( db::model::EVENT_TYPES.deref()))
+}
+
+#[get("/api/v1/events/search/{name}")]
 pub async fn find_events(path: web::Path<String>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
         db::operations::find_events(db.get().unwrap().borrow(), path.0.as_str())
@@ -13,6 +22,11 @@ pub async fn find_events(path: web::Path<String>, db: web::Data<DbPool>) -> Resu
         .map(|events| HttpResponse::Ok().json(events))
         .map_err(|err| HttpResponse::InternalServerError().body(err.to_string()))?;
     Ok(res)
+}
+
+#[get("/api/v1/events/types")]
+pub async fn get_events_types(db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().json( db::model::EVENT_TYPES.deref()))
 }
 
 #[get("/api/v1/user/id/{id}")]

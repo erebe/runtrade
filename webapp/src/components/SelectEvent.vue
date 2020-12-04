@@ -4,7 +4,7 @@
     <div class="card mb-4 shadow-sm">
 
       <div class="card-header d-sm-inline-flex justify-content-sm-between">
-        <span class="col-sm-2">
+        <span class="col-sm-2 d-none d-md-inline-flex">
         </span>
         <span class="pt-1">
           <h4 class="my-sm-0 font-weight-normal">
@@ -18,6 +18,10 @@
           >
             <span data-feather="plus"></span> Add an Event
           </button>
+
+<!--          Modal for adding event-->
+          <AddEvent v-if="displayAddEvent" @close="displayAddEvent = false"></AddEvent>
+
         </span>
       </div>
 
@@ -43,7 +47,7 @@
             <td v-bind:data-eventid="event.id">
               <img class="icon-event-type"
                    v-bind:title="event.event_type"
-                   v-bind:src="eventTypeToSvgIconPath(event.event_type)"/>
+                   v-bind:src="eventTypeToSvgIcon(event.event_type)"/>
             </td>
             <td v-bind:data-eventid="event.id">{{ event.name }}</td>
             <td v-bind:data-eventid="event.id">{{ event.localisation }}</td>
@@ -63,16 +67,18 @@
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
-import Trade from "@/components/Trade.vue";
-import Axios from 'axios';
+import AddEvent from "@/components/AddEvent.vue";
 import $ from "jquery";
 import {Popover} from "bootstrap";
 import 'datatables.net-bs4'
 import 'datatables.net-bs4/css/dataTables.bootstrap4.min.css'
 import feather from 'feather-icons'
-import {getInscriptionForEvent} from "@/api";
+import {getInscriptionForEvent, eventTypeToSvgIconPath} from "@/api";
 
 @Options({
+  components: {
+    AddEvent
+  },
   props: {
     events: Array,
     selectedEvent: Number,
@@ -83,13 +89,14 @@ import {getInscriptionForEvent} from "@/api";
     return {
       datatable: null,
       retrievingEvent: false,
-      displayChoseTrade: false,
+      displayAddEvent: false,
     }
   },
   methods: {
     createEvent(ev: MouseEvent) {
       ev.preventDefault();
-      (window as any).app.keycloak.login();
+      //(window as any).app.keycloak.login();
+      this.displayAddEvent = true;
     },
     async eventSelected(ev: MouseEvent) {
       // do nothing if user click on a link
@@ -111,19 +118,6 @@ import {getInscriptionForEvent} from "@/api";
       }
       this.retrievingEvent = false;
     },
-    eventTypeToSvgIconPath(eventType: string) {
-      switch (eventType.toLocaleLowerCase()) {
-        case 'run':
-          return '/icons/run.svg'
-        case 'trail':
-          return '/icons/trail.svg'
-        case 'bike':
-          return '/icons/bike.svg'
-        default:
-          return '/icons/other.svg'
-
-      }
-    },
     formatDate(timestamp: number) {
       const months = ["January", "February", "March", "April", "May", "June", "July",
         "August", "September", "October", "November", "December"];
@@ -133,7 +127,9 @@ import {getInscriptionForEvent} from "@/api";
           + ('0' + (date.getUTCMonth() + 1)).slice(-2) + '-'
           + ('0' + (date.getUTCDate())).slice(-2);
     },
-
+    eventTypeToSvgIcon(eventType: string) {
+      return eventTypeToSvgIconPath(eventType)
+    },
     init() {
       feather.replace();
       this.datatable = $('#events').DataTable({pageLength: 10, deferRender: true});

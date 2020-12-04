@@ -4,13 +4,13 @@
     <div class="card mb-4 shadow-sm">
 
       <div class="card-header d-sm-inline-flex justify-content-sm-between">
-        <span class="col-sm-2 col-0"></span>
+        <span class="col-2 d-none d-md-inline-flex"></span>
         <span>
           <h4 class="my-sm-0 font-weight-normal">
             <span><img src="/images/go.png"></span>  Trade
           </h4>
         </span>
-        <span class="mx-0 px-0 d-inline-flex align-items-center">
+        <span class="mx-0 px-0">
 <!--          <a class="d-inline-flex mr-3"><span data-feather="link"></span>  Link</a>-->
           <button type="button" class="btn btn btn-block btn-primary mx-0"
                   data-container="body" data-toggle="popover" data-placement="right" data-html="true"

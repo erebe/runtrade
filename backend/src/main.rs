@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
+#[macro_use]
+extern crate lazy_static;
 
 mod db;
 mod api;
@@ -8,6 +10,7 @@ mod api;
 use crate::db::get_postgres_connection_pool;
 use std::env;
 use actix_web::{HttpServer, App, middleware, web};
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -39,7 +42,9 @@ async fn main() -> std::io::Result<()> {
             .service(api::routes::get_user_by_id)
             .service(api::routes::get_user_by_name)
             .service(api::routes::find_events)
+            .service(api::routes::get_events_types)
             .service(api::routes::get_inscriptions_by_event_id)
+            .service(api::routes::add_event)
     }
     )
         .bind(format!("0.0.0.0:{}", &port))?
