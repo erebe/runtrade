@@ -74,6 +74,7 @@ import 'datatables.net-bs4'
 import 'datatables.net-bs4/css/dataTables.bootstrap4.min.css'
 import feather from 'feather-icons'
 import {getInscriptionForEvent, eventTypeToSvgIconPath} from "@/api";
+import {KeycloakInstance} from "keycloak-js";
 
 @Options({
   components: {
@@ -95,7 +96,10 @@ import {getInscriptionForEvent, eventTypeToSvgIconPath} from "@/api";
   methods: {
     createEvent(ev: MouseEvent) {
       ev.preventDefault();
-      //(window as any).app.keycloak.login();
+      const keycloak = this.keycloak() as KeycloakInstance;
+      if ( !keycloak.authenticated) {
+        keycloak.login();
+      }
       this.displayAddEvent = true;
     },
     async eventSelected(ev: MouseEvent) {

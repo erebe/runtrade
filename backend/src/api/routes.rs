@@ -4,12 +4,29 @@ use crate::db;
 
 use std::borrow::Borrow;
 use std::ops::Deref;
+use crate::db::insertables::NewEvent;
 
-use log::info;
+pub async fn cors_event() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok()
+        .header("Access-Control-Allow-Origin", "http://localhost:8080")
+        .header("Access-Control-Allow-Methods", "PUT, GET, OPTIONS")
+        .header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        .body(""))
+}
 
 #[put("/api/v1/event")]
-pub async fn add_event(payload: web::Json<serde_json::Value>) -> Result<HttpResponse, Error> {
-    println!("{:?}", payload);
+pub async fn add_event(payload: web::Json<NewEvent>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let res = web::block(move || {
+        db::operations::create_event(db.get().unwrap().borrow(), &payload)
+    })
+        .await
+        .map(|event| HttpResponse::Ok().json(event))
+        .map_err(|err| HttpResponse::InternalServerError().body(err.to_string()))?;
+    Ok(res)
+}
+
+#[get("/api/v1/event/types")]
+pub async fn get_events_types() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json( db::model::EVENT_TYPES.deref()))
 }
 
@@ -22,11 +39,6 @@ pub async fn find_events(path: web::Path<String>, db: web::Data<DbPool>) -> Resu
         .map(|events| HttpResponse::Ok().json(events))
         .map_err(|err| HttpResponse::InternalServerError().body(err.to_string()))?;
     Ok(res)
-}
-
-#[get("/api/v1/events/types")]
-pub async fn get_events_types(db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok().json( db::model::EVENT_TYPES.deref()))
 }
 
 #[get("/api/v1/user/id/{id}")]
@@ -59,4 +71,24 @@ pub async fn get_inscriptions_by_event_id(path: web::Path<i32>, db: web::Data<Db
         .map(|inscription| HttpResponse::Ok().json(inscription))
         .map_err(|err| HttpResponse::InternalServerError().body(err.to_string()))?;
     Ok(res)
+}
+
+#[cfg(test)]
+mod test {
+    use crate::db::insertables::NewEvent;
+    use crate::db::model::Event_type;
+    use chrono::NaiveDateTime;
+
+    #[test]
+    fn scratch_test() {
+        let ev = NewEvent {
+            name: "sdf".to_string(),
+            event_type: Event_type::Run,
+            localisation: "sdf".to_string(),
+            event_date: NaiveDateTime::from_timestamp(1706313552, 0),
+            event_link: "sdfsdf".to_string()
+        };
+
+        println!("{:?}", serde_json::to_string(&ev).unwrap());
+    }
 }

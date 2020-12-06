@@ -5,7 +5,7 @@
 use diesel_derive_enum::DbEnum;
 use chrono::NaiveDateTime;
 use chrono::naive::serde::ts_seconds;
-use serde::Serialize;
+use serde::{ Serialize, Deserialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -16,7 +16,7 @@ lazy_static! {
     pub static ref INSCRIPTION_INTENTS: Vec<Inscription_intent> = Inscription_intent::iter().collect();
 }
 
-#[derive(DbEnum, Serialize, EnumIter, Debug)]
+#[derive(DbEnum, Serialize, Deserialize, EnumIter, Debug)]
 pub enum Event_type {
     Run,
     Trail,
@@ -27,7 +27,7 @@ pub enum Event_type {
     Other,
 }
 
-#[derive(DbEnum, Serialize, EnumIter, Debug)]
+#[derive(DbEnum, Serialize, Deserialize, EnumIter, Debug)]
 pub enum Inscription_intent {
     Buy,
     Sell,

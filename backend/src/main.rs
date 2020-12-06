@@ -9,7 +9,7 @@ mod api;
 
 use crate::db::get_postgres_connection_pool;
 use std::env;
-use actix_web::{HttpServer, App, middleware, web};
+use actix_web::{HttpServer, App, middleware, web, http};
 
 
 #[actix_web::main]
@@ -34,7 +34,7 @@ async fn main() -> std::io::Result<()> {
         #[cfg(debug_assertions)] // If in not release allow localhost to ease developpement
         (headers = headers.header("Access-Control-Allow-Origin", "http://localhost:8080"));
 
-        App::new()
+        let app = App::new()
             .wrap(headers)
             .wrap(middleware::Logger::default())
             .data(db_pool.clone())
@@ -44,7 +44,12 @@ async fn main() -> std::io::Result<()> {
             .service(api::routes::find_events)
             .service(api::routes::get_events_types)
             .service(api::routes::get_inscriptions_by_event_id)
-            .service(api::routes::add_event)
+            .service(api::routes::add_event);
+
+            #[cfg(debug_assertions)]
+            let app = app.route("api/v1/*", web::method(http::Method::OPTIONS).to(api::routes::cors_event));
+
+            app
     }
     )
         .bind(format!("0.0.0.0:{}", &port))?

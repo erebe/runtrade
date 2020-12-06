@@ -9,7 +9,7 @@
 <!--      <a class="p-2 text-dark" href="#">Your trades</a>-->
     </nav>
     <img v-if="logged" id="userPicture" v-bind:src="userProfile.picture">
-    <a v-else class="btn btn-primary" id="btn-sign" v-on:click="keycloak.login()" href="#">Sign In</a>
+    <a v-else class="btn btn-primary" id="btn-sign" v-on:click="keycloak().login()" href="#">Sign In</a>
   </div>
 
   <!--<div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">-->
@@ -38,6 +38,8 @@ import SearchEvent from "@/components/SearchEvent.vue";
 import SelectEvent from "@/components/SelectEvent.vue";
 import Trade from "@/components/Trade.vue";
 import _ from 'lodash';
+import axios from 'axios';
+import {KeycloakInstance} from "keycloak-js";
 
 @Options({
   components: {
@@ -76,13 +78,36 @@ import _ from 'lodash';
     },
   },
   beforeMount() {
-    this.keycloak().init({onLoad: "check-sso"}).then((auth: boolean) => {
+    const token = localStorage.getItem("vue-token");
+    const tokenRefresh = localStorage.getItem("vue-refresh-token");
+    const keycloak = this.keycloak() as KeycloakInstance;
+    keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((auth: boolean) => {
       if (this.keycloak().authenticated) {
-        this.keycloak().loadUserInfo().then((user: any) => {
+        localStorage.setItem("vue-token", this.keycloak().token);
+        localStorage.setItem("vue-refresh-token", this.keycloak().refreshToken);
+
+        axios.interceptors.request.use(config => {
+          config.headers.Authorization = `Bearer ${this.keycloak().token}`
+          return config
+        }, error => {
+          return Promise.reject(error)
+        })
+
+        keycloak.loadUserInfo().then((user: any) => {
           this.userPofile = user;
           this.userProfile.picture = JSON.parse((user as any).picture)['url'];
           this.logged = true;
         })
+
+        setInterval(() =>{
+          keycloak.updateToken(70).then((success: boolean) => {
+            if(success) {
+              localStorage.setItem("vue-token", this.keycloak().token);
+              localStorage.setItem("vue-refresh-token", this.keycloak().refreshToken);
+            }
+          });
+
+        }, 60000)
       }
     });
   },
