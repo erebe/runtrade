@@ -60,7 +60,6 @@ import {findEventByName} from "@/api";
       try {
         // Find events
         const response = await findEventByName(this.eventName)
-        //this.events = response.data as Array<any>;
         this.$emit('update:events', response.data);
 
         // Transition to new state

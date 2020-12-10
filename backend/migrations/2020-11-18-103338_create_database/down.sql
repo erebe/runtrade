@@ -4,3 +4,8 @@ DROP TYPE IF EXISTS gender;
 DROP TABLE IF EXISTS events;
 DROP TYPE IF EXISTS event_type;
 DROP TABLE IF EXISTS users;
+DROP INDEX IF EXISTS idx_users_email_btree;
+DROP INDEX IF EXISTS idx_users_externalid_btree;
+DROP INDEX IF EXISTS idx_events_name_gin;
+DROP INDEX IF EXISTS idx_events_localisation_gin;
+DROP INDEX IF EXISTS idx_events_eventlink_gin;

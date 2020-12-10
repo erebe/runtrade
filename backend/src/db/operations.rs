@@ -11,6 +11,8 @@ use super::schema::events::dsl::events;
 use super::schema::users::dsl::{id, users};
 use crate::db::model::Inscription;
 use chrono::format::Numeric::Timestamp;
+use diesel::pg::upsert::excluded;
+use crate::db::schema::users::columns::{external_id, last_logged, contact};
 
 const MAX_RESULTS: i64 = 200;
 
@@ -31,9 +33,25 @@ pub fn get_user_by_name(conn: &PgConnection, user_name: &str) -> QueryResult<Use
         .first::<User>(conn)
 }
 
+pub fn get_user_by_external_id(conn: &PgConnection, user_external_id: &uuid::Uuid) -> QueryResult<User> {
+    users.filter(external_id.eq(user_external_id))
+        .first::<User>(conn)
+}
+
 pub fn create_user(conn: &PgConnection, user: &NewUser) -> QueryResult<User> {
     diesel::insert_into(users)
         .values(user)
+        .get_result(conn)
+}
+
+pub fn update_user_last_logged(conn: &PgConnection, user: &NewUser) -> QueryResult<User> {
+    use super::schema::users::id;
+
+    diesel::insert_into(users)
+        .values(user)
+        .on_conflict(external_id)
+        .do_update()
+        .set(last_logged.eq(excluded(last_logged)))
         .get_result(conn)
 }
 
@@ -42,6 +60,14 @@ pub fn update_user(conn: &PgConnection, user_id: i32, user: &NewUser) -> QueryRe
 
     diesel::update(users.filter(id.eq(user_id)))
         .set(user)
+        .get_result(conn)
+}
+
+pub fn update_user_contact(conn: &PgConnection, user_id: i32, user_contact: &str) -> QueryResult<User> {
+    use super::schema::users::id;
+
+    diesel::update(users.filter(id.eq(user_id)))
+        .set(contact.eq(user_contact))
         .get_result(conn)
 }
 
@@ -58,17 +84,36 @@ pub fn delete_user(conn: &PgConnection, user_id: i32) -> QueryResult<usize> {
 pub fn find_events(conn: &PgConnection, event: &str) -> QueryResult<Vec<Event>> {
     use super::schema::events::id;
 
-    let search_pat = format!("%{}%", event.replace(' ', "%"));
+    // let search_pat = format!("%{}%", event.replace(' ', "%"));
     let today = Utc::today().naive_utc();
     let midnight = NaiveTime::from_hms(0, 0, 0);
 
-    events
-        .filter(name.ilike(&search_pat)
-            .or(localisation.ilike(&search_pat))
-            .or(event_link.ilike(&search_pat))
-            .and(event_date.gt(NaiveDateTime::new(today, midnight))))
-        .limit(MAX_RESULTS)
-        .load::<Event>(conn)
+    //let mut query = name.ilike(&search_pat);
+    let tokens: Vec<&str> = event.split( ' ')
+        .collect();
+
+    let mut query = String::with_capacity(512);
+    for token in tokens.iter() {
+        query += format!(r#"
+           name ILIKE '%{}%'
+        OR localisation ILIKE '%{}%'
+        OR event_link ILIKE '%{}%'
+        OR "#, token, token, token).as_str();
+    }
+    let queryF = format!(r#"
+    SELECT * FROM events
+    WHERE {} AND event_date >= CURRENT_DATE
+    LIMIT {};"#, &query[..(query.len()-3)], MAX_RESULTS);
+
+    diesel::sql_query(queryF).load::<Event>(conn)
+}
+
+pub fn get_event(conn: &PgConnection, event_id: i32) -> QueryResult<Event>{
+    use super::schema::events::id;
+
+    events.filter(id.eq(event_id))
+        .first(conn)
+
 }
 
 pub fn create_event(conn: &PgConnection, event: &NewEvent) -> QueryResult<Event> {
@@ -106,14 +151,15 @@ pub fn get_inscription_by_event_id(conn: &PgConnection, event_ids: i32) -> Query
         .inner_join(events)
         .load::<(Inscription, User, Event)>(conn)
 }
-pub fn upsert_inscription(conn: &PgConnection, inscription: &NewInscriptions) -> QueryResult<Inscription> {
+pub fn upsert_inscription(conn: &PgConnection, inscription: &NewInscription) -> QueryResult<Inscription> {
     use super::schema::inscriptions::dsl::*;
 
+    println!("{:?}", inscription);
     diesel::insert_into(inscriptions)
         .values(inscription)
         .on_conflict(id)
         .do_update()
-        .set(created_at.eq(Utc::now().naive_utc()))
+        .set(created_at.eq(excluded(created_at)))
         .get_result(conn)
 }
 
@@ -122,11 +168,11 @@ pub fn upsert_inscription(conn: &PgConnection, inscription: &NewInscriptions) ->
 mod test {
     use std::env;
 
-    use chrono::NaiveDateTime;
+    use chrono::{NaiveDateTime, Utc};
     use diesel::{Connection, PgConnection, QueryResult, ExpressionMethods, RunQueryDsl};
     use dotenv::dotenv;
 
-    use crate::db::insertables::{NewEvent, NewUser, NewInscriptions};
+    use crate::db::insertables::{NewEvent, NewUser, NewInscription};
     use crate::db::model::{Event, Event_type, Inscription_intent, Gender};
     use crate::db::operations::{create_event, create_user, find_events, update_user, upsert_inscription};
     use crate::db::schema::events::dsl::events;
@@ -144,11 +190,11 @@ mod test {
     fn test_create_user() {
         let conn = establish_connection();
         let user = NewUser {
-            name: "toto",
-            email: "tata",
-            contact_1: "tutu",
-            contact_2: "titi",
-            contact_3: "tete",
+            name: "toto".to_string(),
+            email: "tata".to_string(),
+            contact: "titi".to_string(),
+            external_id: Default::default(),
+            last_logged: Utc::now().naive_utc()
         };
 
         assert_eq!(create_user(&conn, &user).unwrap().name, user.name);
@@ -159,14 +205,14 @@ mod test {
         let conn = establish_connection();
 
         let mut user = NewUser {
-            name: "toto",
-            email: "tata",
-            contact_1: "tutu",
-            contact_2: "titi",
-            contact_3: "tete",
+            name: "toto".to_string(),
+            email: "tuta".to_string(),
+            contact: "titi".to_string(),
+            external_id: Default::default(),
+            last_logged: Utc::now().naive_utc()
         };
         let user_id = create_user(&conn, &user).unwrap().id;
-        user.name = "abcdefg";
+        user.name = "abcdefg".to_string();
 
         let updated_user = update_user(&conn, user_id, &user).unwrap();
         assert_eq!(updated_user.name, user.name);
@@ -201,11 +247,9 @@ mod test {
     #[test]
     fn create_fake_date() {
         let user1 = NewUser {
-            name: "erebe",
-            email: "erebe@erebe.eu",
-            contact_1: "facebook: https://www.facebook.com/erebe.dellu.16",
-            contact_2: "email: nemesia.lilith@gmail.com",
-            contact_3: "telephone: 336597126xx"
+            name: "erebe".to_string(),
+            email: "erebe@erebe.eu".to_string(),
+            contact: "facebook: https://www.facebook.com/erebe.dellu.16",
         };
         let user2 = NewUser {
             name: "Romain Gerard",
@@ -243,7 +287,7 @@ mod test {
         let ev2 = create_event(&conn, &event2).unwrap();
         let ev3 = create_event(&conn, &event3).unwrap();
         
-        let inscription1 = NewInscriptions {
+        let inscription1 = NewInscription {
             user_id: us1.id,
             event_id: ev1.id,
             distance: "42km",
@@ -253,7 +297,7 @@ mod test {
             note: "42Km c'est trop long",
             gender: &Gender::Women,
         };
-        let inscription2 = NewInscriptions {
+        let inscription2 = NewInscription {
             user_id: us2.id,
             event_id: ev2.id,
             distance: "21km",
@@ -263,7 +307,7 @@ mod test {
             note: "Blessure genoux",
             gender: &Gender::Man,
         };
-        let inscription3 = NewInscriptions {
+        let inscription3 = NewInscription {
             user_id: us1.id,
             event_id: ev1.id,
             distance: "10km",
@@ -273,7 +317,7 @@ mod test {
             note: "je veux le faire parceque courrir c'est trop bien pour ton corps de grande malade. Vive le F1",
             gender: &Gender::Women,
         };
-        let inscription4 = NewInscriptions {
+        let inscription4 = NewInscription {
             user_id: us1.id,
             event_id: ev1.id,
             distance: "21km",

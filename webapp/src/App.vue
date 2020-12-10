@@ -19,16 +19,15 @@
 
   <div class="container">
     <!--    STEP I-->
-    <SearchEvent :eventSearch="extractEventFromUrl()" v-model:events="this.events"></SearchEvent>
+    <SearchEvent :eventSearch="this.searchEvent" v-model:events="this.events"></SearchEvent>
 
     <!--    STEP II-->
     <SelectEvent v-if="displaySelectEvent" :events="events"
                  v-model:selectedEvent="this.selectedEvent"
-                 v-model:inscriptions="this.inscriptions"
     ></SelectEvent>
 
     <!--    STEP III-->
-    <Trade v-if="displayTrade" :inscriptions="this.inscriptions"></Trade>
+    <Trade v-if="displayTrade" :event="this.event" :inscriptions="this.inscriptions"></Trade>
   </div>
 </template>
 
@@ -40,6 +39,8 @@ import Trade from "@/components/Trade.vue";
 import _ from 'lodash';
 import axios from 'axios';
 import {KeycloakInstance} from "keycloak-js";
+import * as Api from "@/api";
+import {getAppContext} from "@/main";
 
 @Options({
   components: {
@@ -50,18 +51,20 @@ import {KeycloakInstance} from "keycloak-js";
   data() {
     return {
       logged: false,
-      userProfile: {},
+      userProfile: null,
 
-      events: [],
-      selectedEvent: null,
-      inscriptions: [],
+      searchEvent: null,
+      events: null as unknown as Array<Api.Event>,
+      selectedEvent: 0,
+      event: null as unknown as Api.Event,
+      inscriptions: null as unknown as Array<[Api.Inscription, Api.User, Api.Event]>,
 
       displaySelectEvent: false,
       displayTrade: false,
     };
   },
   methods: {
-    extractEventFromUrl() {
+    initStateFromUrl() {
       const hash = window.location.hash.substr(1);
       const result = hash.split('&').reduce(function (res: any, item) {
         const parts = item.split('=');
@@ -71,16 +74,22 @@ import {KeycloakInstance} from "keycloak-js";
 
       const search = (result as any).findEvent;
       if(!_.isUndefined(search)) {
-        return decodeURI(search);
-      } else {
-        return "";
+        this.searchEvent = decodeURI(search);
       }
+
+      const path = window.location.pathname.split('/');
+      if (path.length == 3 && path[1] == "event") {
+        this.selectedEvent = parseInt(path[2]);
+      }
+
     },
   },
+
   beforeMount() {
     const token = localStorage.getItem("vue-token");
     const tokenRefresh = localStorage.getItem("vue-refresh-token");
     const keycloak = this.keycloak() as KeycloakInstance;
+    console.log(keycloak);
     keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((auth: boolean) => {
       if (this.keycloak().authenticated) {
         localStorage.setItem("vue-token", this.keycloak().token);
@@ -93,13 +102,19 @@ import {KeycloakInstance} from "keycloak-js";
           return Promise.reject(error)
         })
 
-        keycloak.loadUserInfo().then((user: any) => {
-          this.userPofile = user;
-          this.userProfile.picture = JSON.parse((user as any).picture)['url'];
+        keycloak.loadUserProfile().then(user => {
+          this.userProfile = user;
+          this.userProfile.picture = JSON.parse((user as any).attributes.picture)['url'];
           this.logged = true;
+
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          Api.userLogged({name: user.username!, email: user.email!, contact: "", external_id: keycloak.subject!, last_logged: 0})
+              .then(response => {
+                getAppContext().user = response.data;
+              });
         })
 
-        setInterval(() =>{
+        setInterval(() => {
           keycloak.updateToken(70).then((success: boolean) => {
             if(success) {
               localStorage.setItem("vue-token", this.keycloak().token);
@@ -110,17 +125,33 @@ import {KeycloakInstance} from "keycloak-js";
         }, 60000)
       }
     });
+
+    this.initStateFromUrl();
+  },
+  async beforeUpdate() {
+    if(!_.isNil(this.events)) {
+      this.displaySelectEvent = true;
+    }
+
+    this.displayTrade = (this.selectedEvent !== 0);
   },
   watch: {
-    events: function (newVal, _oldVal) {
-        this.displaySelectEvent = true;
-        this.displayTrade = false;
+    events: function() {
+      this.selectedEvent = 0;
     },
+    selectedEvent: async function (eventId, _oldVal) {
+      if (eventId === 0) {
+        history.pushState(null, "RunTrade", '/' + window.location.hash)
+        return;
+      }
 
-    inscriptions: function (newVal, _oldVal) {
-      if(!_.isEmpty(newVal)) {
-        this.displayTrade = true;
-        history.pushState(null, "RunTrade", '/event/' + this.selectedEvent + window.location.hash)
+      history.pushState(null, "RunTrade", '/event/' + eventId + window.location.hash)
+      try {
+        const [inscriptions, event] = await Promise.all([Api.getInscriptionForEvent(eventId), Api.getEvent(eventId)]);
+        this.inscriptions = inscriptions.data;
+        this.event = event.data;
+      } catch (err) {
+        console.error(err);
       }
     }
   }

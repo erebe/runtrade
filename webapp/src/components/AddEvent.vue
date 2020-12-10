@@ -13,19 +13,19 @@
             <div class="form-group row">
               <label for="eventName" class="col-sm-2 col-form-label">Event Name</label>
               <div class="col-sm-10">
-                <input ref="name" v-model="event.name" type="text" class="form-control" id="eventName" placeholder="Marathon Paris" >
+                <input ref="name" v-model.trim="event.name" type="text" class="form-control" id="eventName" placeholder="Marathon Paris" >
               </div>
             </div>
             <div class="form-group row">
               <label for="localisation" class="col-sm-2 col-form-label">Localisation</label>
               <div class="col-sm-10">
-                <input ref="localisation" v-model="event.localisation" type="text" class="form-control" id="localisation" placeholder="Paris France" >
+                <input ref="localisation" v-model.trim="event.localisation" type="text" class="form-control" id="localisation" placeholder="Paris France" >
               </div>
             </div>
             <div class="form-group row">
               <label for="eventUrl" class="col-sm-2 col-form-label">Event link/site</label>
               <div class="col-sm-10">
-                <input ref="link" v-model="event.link" type="url" class="form-control" id="eventUrl" placeholder="https://www.schneiderelectricparismarathon.com" >
+                <input ref="link" v-model.trim="event.event_link" type="url" class="form-control" id="eventUrl" placeholder="https://www.schneiderelectricparismarathon.com" >
                 <div class="invalid-feedback text-left">
                   Link should start by http:// or htts:// and contains a . (i.e: https://www.france.fr)
                 </div>
@@ -34,14 +34,14 @@
             <div class="form-group row">
               <label for="eventDate" class="col-sm-2 col-form-label">Event Date</label>
               <div class="col-sm-4">
-                <input ref="date" v-model="event.date" type="date" class="form-control" id="eventDate" >
+                <input ref="date" v-model.trim="event.event_date" type="date" class="form-control" id="eventDate" >
                 <div class="invalid-feedback text-left">
                   The date of the event should be in the future
                 </div>
               </div>
               <label for="eventType" class="col-sm-2 col-form-label">Event Type</label>
               <div class="col-sm-4">
-                <select ref="type" v-model="event.type" class="form-control" id="eventType" >
+                <select ref="type" v-model="event.event_type" class="form-control" id="eventType" >
                   <option v-for="evType in eventTypes" :key="evType" :value="evType">{{ evType }}</option>
                 </select>
               </div>
@@ -50,7 +50,14 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="submit" @click="submit" class="btn btn-primary">Create Event</button>
+<!--            <button type="submit" @click="submit" class="btn btn-primary">Create Event</button>-->
+            <button v-if="loading" type="submit" class="btn btn-primary">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Creating...
+            </button>
+            <button v-else type="submit" @click="submit" class="btn btn-primary">
+              Create Event
+            </button>
           </div>
         </div>
 
@@ -60,54 +67,52 @@
 </template>
 
 <script lang="ts">
+/* eslint-disable @typescript-eslint/camelcase */
+
 import { Options, Vue } from 'vue-class-component';
 import $ from "jquery";
 import {Modal} from "bootstrap";
-import {addEvent, eventTypeToSvgIconPath, getEventTypes} from "@/api";
+import * as Api from "@/api";
 import _ from 'lodash';
-import {KeycloakInstance} from "keycloak-js";
+import {getAppContext} from "@/main";
 
 @Options({
   emits: ['close'],
   data: () => {
     return {
       eventTypes: [],
-      event: {
-        name: "",
-        localisation: "",
-        link: "",
-        date: "",
-        type: "Run",
-        createdBy: ""
-      }
+      loading: false,
+      event: Api.newEvent(getAppContext().user!)
     }
   },
   methods: {
     eventTypeToSvgIcon(eventType: string): string {
-      return eventTypeToSvgIconPath(eventType);
+      return Api.eventTypeToSvgIconPath(eventType);
     },
-    submit(ev: MouseEvent) {
+    async submit(ev: MouseEvent) {
       ev.preventDefault();
       let isValid = true;
-      if(_.isEmpty(this.event.name)) {
+      const event: Api.Event = this.event;
+
+      if(_.isEmpty(event.name)) {
         this.$refs.name.classList.remove("is-valid");
         this.$refs.name.classList.add("is-invalid");
         isValid = false;
       }
 
-      if(_.isEmpty(this.event.localisation)) {
+      if(_.isEmpty(event.localisation)) {
         this.$refs.localisation.classList.remove("is-valid");
         this.$refs.localisation.classList.add("is-invalid");
         isValid = false;
       }
 
-      if(_.isEmpty(this.event.link) || this.$refs.link.classList.contains("is-invalid")) {
+      if(_.isEmpty(event.event_link) || this.$refs.link.classList.contains("is-invalid")) {
         this.$refs.link.classList.remove("is-valid");
         this.$refs.link.classList.add("is-invalid");
         isValid = false;
       }
 
-      if(_.isEmpty(this.event.date) || this.$refs.date.classList.contains("is-invalid")) {
+      if(_.isEmpty(event.event_date) || this.$refs.date.classList.contains("is-invalid")) {
         this.$refs.date.classList.remove("is-valid");
         this.$refs.date.classList.add("is-invalid");
         isValid = false;
@@ -117,10 +122,11 @@ import {KeycloakInstance} from "keycloak-js";
         return;
       }
 
-      this.event.date += 'T00:00:00';
-      addEvent(this.event).then((response) => {
-        window.location.hash = '#findEvent=' + encodeURI(this.event.name);
-        window.location.pathname = '/event/' + (response.data as any).id;
+      event.event_date = new Date(event.event_date).getTime() / 1000;
+      this.loading = true;
+      Api.addEvent(event).then((response) => {
+        window.location.hash = '#findEvent=' + encodeURI(response.data.name);
+        window.location.pathname = '/event/' + response.data.id;
       }).catch((err) => {
         console.log('failure');
         console.log(err);
@@ -129,26 +135,28 @@ import {KeycloakInstance} from "keycloak-js";
 
     }
   },
-  async mounted() {
+  async created() {
+    this.eventTypes = (await Api.getEventTypes()).data;
+  },
+  mounted() {
     const el = $('#addEvent');
     const modal = new Modal(el[0]);
     el.on('hidden.bs.modal', () => this.$emit('close'));
     modal.show();
-    this.eventTypes = (await getEventTypes()).data;
-    this.event.createdBy = (await (this.keycloak() as KeycloakInstance).loadUserProfile()).email;
   },
   updated() {
-    if (!_.isEmpty(this.event.name)) {
+    const event: Api.Event = this.event;
+    if (!_.isEmpty(event.name)) {
       this.$refs.name.classList.remove("is-invalid");
       this.$refs.name.classList.add("is-valid");
     }
 
-    if (!_.isEmpty(this.event.localisation)) {
+    if (!_.isEmpty(event.localisation)) {
       this.$refs.localisation.classList.remove("is-invalid");
       this.$refs.localisation.classList.add("is-valid");
     }
 
-    const link = this.event.link as string;
+    const link = event.event_link;
     if (!_.isEmpty(link)) {
       if (link.match(/^https?:\/\/[^.]+\..+$/)) {
         this.$refs.link.classList.remove("is-invalid");
@@ -159,8 +167,8 @@ import {KeycloakInstance} from "keycloak-js";
       }
     }
 
-    if(!_.isEmpty(this.event.date)) {
-      const date = new Date(this.event.date);
+    if(!_.isEmpty(event.event_date)) {
+      const date = new Date(event.event_date);
       if(date <= new Date()) {
         this.$refs.date.classList.remove("is-valid");
         this.$refs.date.classList.add("is-invalid");

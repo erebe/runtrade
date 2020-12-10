@@ -41,12 +41,16 @@ async fn main() -> std::io::Result<()> {
             .data(web::JsonConfig::default().limit(4096))
             .service(api::routes::get_user_by_id)
             .service(api::routes::get_user_by_name)
+            .service(api::routes::update_user_contact)
+            .service(api::routes::put_user_logged)
             .service(api::routes::find_events)
             .service(api::routes::get_events_types)
             .service(api::routes::get_inscriptions_by_event_id)
-            .service(api::routes::add_event);
+            .service(api::routes::add_event)
+            .service(api::routes::add_inscription)
+            .service(api::routes::get_event);
 
-            #[cfg(debug_assertions)]
+        #[cfg(debug_assertions)]
             let app = app.route("api/v1/*", web::method(http::Method::OPTIONS).to(api::routes::cors_event));
 
             app

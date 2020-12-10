@@ -1,12 +1,24 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+SET TIMEZONE = 'UTC';
+SET client_encoding = 'UTF8';
+
 CREATE TABLE users
 (
-    id        SERIAL PRIMARY KEY,
-    name      TEXT NOT NULL CHECK (name <> ''),
-    email     TEXT NOT NULL CHECK (email <> ''),
-    contact_1 TEXT CHECK (contact_1 <> ''),
-    contact_2 TEXT CHECK (contact_2 <> ''),
-    contact_3 TEXT CHECK (contact_3 <> '')
+    id          SERIAL PRIMARY KEY,
+    name        TEXT      NOT NULL CHECK (name <> ''),
+    email       TEXT      NOT NULL CHECK (email <> ''),
+    contact     TEXT      NOT NULL,
+    external_id uuid      NOT NULL DEFAULT uuid_generate_v4(),
+    last_logged TIMESTAMP NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX idx_users_email_btree ON users (email);
+CREATE UNIQUE INDEX idx_users_externalid_btree ON users (external_id);
+
+INSERT INTO users
+VALUES (1, 'admin', 'runtrade@erebe.eu', 'https://m.me/erebe.dellu.42', uuid_generate_v4(), to_timestamp(0));
+
 
 CREATE TYPE EVENT_TYPE AS ENUM ('run', 'trail', 'cross', 'triathlon', 'ironman', 'bike', 'other');
 
@@ -17,20 +29,26 @@ CREATE TABLE events
     event_type   EVENT_TYPE NOT NULL,
     localisation TEXT       NOT NULL CHECK (localisation <> ''),
     event_date   TIMESTAMP  NOT NULL,
-    event_link   TEXT       NOT NULL
+    event_link   TEXT       NOT NULL,
+    created_at   TIMESTAMP  NOT NULL,
+    user_id      SERIAL REFERENCES users (id) ON DELETE SET DEFAULT
 
 );
+CREATE INDEX idx_events_name_gin ON events USING gin (name gin_trgm_ops);
+CREATE INDEX idx_events_localisation_gin ON events USING gin (localisation gin_trgm_ops);
+CREATE INDEX idx_events_eventlink_gin ON events USING gin (event_link gin_trgm_ops);
 
 CREATE TYPE INSCRIPTION_INTENT AS ENUM ('buy', 'sell');
-CREATE TYPE GENDER AS ENUM ('man', 'women');
+CREATE TYPE GENDER AS ENUM ('man', 'woman', 'other');
 
 CREATE TABLE inscriptions
 (
     id         SERIAL PRIMARY KEY,
     user_id    SERIAL REFERENCES users (id) ON DELETE CASCADE,
     event_id   SERIAL REFERENCES events (id) ON DELETE CASCADE,
-    distance   TEXT               NOT NULL CHECK (distance <> ''),
+    category   TEXT               NOT NULL CHECK (category <> ''),
     price      REAL               NOT NULL CHECK (price >= 0.0),
+    currency   VARCHAR(1)         NOT NULL CHECK (currency <> ''),
     intent     INSCRIPTION_INTENT NOT NULL,
     created_at timestamp          NOT NULL,
     note       TEXT               NOT NULL,

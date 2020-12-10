@@ -8,12 +8,15 @@ use chrono::naive::serde::ts_seconds;
 use serde::{ Serialize, Deserialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use super::schema::events;
 
 use lazy_static;
+use uuid::Uuid;
 
 lazy_static! {
     pub static ref EVENT_TYPES: Vec<Event_type> = Event_type::iter().collect();
     pub static ref INSCRIPTION_INTENTS: Vec<Inscription_intent> = Inscription_intent::iter().collect();
+    pub static ref GENDERS: Vec<Gender> = Gender::iter().collect();
 }
 
 #[derive(DbEnum, Serialize, Deserialize, EnumIter, Debug)]
@@ -33,13 +36,15 @@ pub enum Inscription_intent {
     Sell,
 }
 
-#[derive(DbEnum, Serialize, Debug)]
+#[derive(DbEnum, Serialize, Deserialize, EnumIter, Debug)]
 pub enum Gender {
     Man,
-    Women
+    Woman,
+    Other
 }
 
-#[derive(Queryable, Serialize, Debug)]
+#[derive(Queryable, QueryableByName, Serialize, Debug)]
+#[table_name="events"]
 pub struct Event {
     pub id: i32,
     pub name: String,
@@ -48,6 +53,9 @@ pub struct Event {
     #[serde(with = "ts_seconds")]
     pub event_date: NaiveDateTime,
     pub event_link: String,
+    #[serde(with = "ts_seconds")]
+    pub created_at: NaiveDateTime,
+    pub user_id: i32
 }
 
 #[derive(Queryable, Serialize, Debug)]
@@ -55,8 +63,9 @@ pub struct Inscription {
     pub id: i32,
     pub user_id: i32,
     pub event_id: i32,
-    pub distance: String,
+    pub category: String,
     pub price: f32,
+    pub currency: String,
     pub intent: Inscription_intent,
     #[serde(with = "ts_seconds")]
     pub created_at: NaiveDateTime,
@@ -69,8 +78,9 @@ pub struct User {
     pub id: i32,
     pub name: String,
     pub email: String,
-    pub contact_1: Option<String>,
-    pub contact_2: Option<String>,
-    pub contact_3: Option<String>,
+    pub contact: String,
+    pub external_id: Uuid,
+    #[serde(with = "ts_seconds")]
+    pub last_logged: NaiveDateTime,
 }
 

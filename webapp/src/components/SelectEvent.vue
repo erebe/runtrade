@@ -1,6 +1,6 @@
 <template>
   <!--    STEP II-->
-  <div class="card-deck mb-4 text-center" id="eventsContainer">
+  <div id="eventsContainer" class="card-deck mb-4 text-center">
     <div class="card mb-4 shadow-sm">
 
       <div class="card-header d-sm-inline-flex justify-content-sm-between">
@@ -12,14 +12,14 @@
           </h4>
         </span>
         <span class="m-0 px-0">
-          <button type="button" v-on:click="createEvent" class="btn btn btn-block btn-primary"
-                  data-container="body" data-toggle="popover" data-placement="right" data-html="true"
-                  data-content="Your Event is not here ? <br/> Feel free to add it by providing few information !"
+          <button class="btn btn btn-block btn-primary" data-container="body" data-content="Your Event is not here ? <br/> Feel free to add it by providing few information !"
+                  data-html="true" data-placement="right" type="button"
+                  v-on:click="createEvent"
           >
             <span data-feather="plus"></span> Add an Event
           </button>
 
-<!--          Modal for adding event-->
+          <!--          Modal for adding event-->
           <AddEvent v-if="displayAddEvent" @close="displayAddEvent = false"></AddEvent>
 
         </span>
@@ -32,7 +32,7 @@
             <span class="sr-only">Loading...</span>
           </div>
         </span>
-        <table class="table table-sm table-bordered table-hover" id="events" data-order='[[3, "asc"], [1, "asc"]]'>
+        <table id="events" class="table table-sm table-bordered table-hover" data-order='[[3, "asc"], [1, "asc"]]'>
           <thead>
           <tr>
             <th scope="col">Type</th>
@@ -43,17 +43,17 @@
           </tr>
           </thead>
           <tbody>
-          <tr v-for="event in events" v-bind:key="event.id" v-on:click="eventSelected" >
+          <tr v-for="event in events" v-bind:key="event.id" v-on:click="eventSelected">
             <td v-bind:data-eventid="event.id">
               <img class="icon-event-type"
-                   v-bind:title="event.event_type"
-                   v-bind:src="eventTypeToSvgIcon(event.event_type)"/>
+                   v-bind:src="eventTypeToSvgIcon(event.event_type)"
+                   v-bind:title="event.event_type"/>
             </td>
             <td v-bind:data-eventid="event.id">{{ event.name }}</td>
             <td v-bind:data-eventid="event.id">{{ event.localisation }}</td>
             <td v-bind:data-eventid="event.id">{{ formatDate(event.event_date) }}</td>
             <td class="text-justify" v-bind:data-eventid="event.id">
-              <a v-bind:href="event.event_link" target="_blank" rel="noopener noreferrer">{{ event.event_link }}</a>
+              <a rel="noopener noreferrer" target="_blank" v-bind:href="event.event_link">{{ event.event_link }}</a>
             </td>
           </tr>
 
@@ -66,26 +66,27 @@
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component';
+import {Options, Vue} from 'vue-class-component';
 import AddEvent from "@/components/AddEvent.vue";
 import $ from "jquery";
 import {Popover} from "bootstrap";
 import 'datatables.net-bs4'
 import 'datatables.net-bs4/css/dataTables.bootstrap4.min.css'
 import feather from 'feather-icons'
-import {getInscriptionForEvent, eventTypeToSvgIconPath} from "@/api";
+import * as Api from "@/api";
+import _ from "lodash";
 import {KeycloakInstance} from "keycloak-js";
+import { PropType } from 'vue';
 
 @Options({
   components: {
     AddEvent
   },
   props: {
-    events: Array,
+    events: Object as PropType<Api.Event[]>,
     selectedEvent: Number,
-    inscriptions: Array
   },
-  emits: ['update:selectedEvent', 'update:inscriptions'],
+  emits: ['update:selectedEvent', 'update:event'],
   data: () => {
     return {
       datatable: null,
@@ -97,25 +98,25 @@ import {KeycloakInstance} from "keycloak-js";
     createEvent(ev: MouseEvent) {
       ev.preventDefault();
       const keycloak = this.keycloak() as KeycloakInstance;
-      if ( !keycloak.authenticated) {
+      if (!keycloak.authenticated) {
         keycloak.login();
       }
       this.displayAddEvent = true;
     },
     async eventSelected(ev: MouseEvent) {
       // do nothing if user click on a link
-      if((ev.target as HTMLElement).nodeName == "A") {
+      if ((ev.target as HTMLElement).nodeName == "A") {
         return;
       }
 
       ev.preventDefault();
+      console.log(this);
       this.retrievingEvent = true;
       try {
         // Find events
-        const eventId = (ev.target as HTMLTableCellElement).dataset.eventid!
-        const response = await getInscriptionForEvent(parseInt(eventId))
+        const eventId = parseInt((ev.target as HTMLTableCellElement).dataset.eventid!);
         this.$emit('update:selectedEvent', eventId);
-        this.$emit('update:inscriptions', response.data);
+        this.$emit('update:event', _.find(this.events, ev => ev.id === eventId));
 
       } catch (error) {
         console.error(error);
@@ -132,7 +133,7 @@ import {KeycloakInstance} from "keycloak-js";
           + ('0' + (date.getUTCDate())).slice(-2);
     },
     eventTypeToSvgIcon(eventType: string) {
-      return eventTypeToSvgIconPath(eventType)
+      return Api.eventTypeToSvgIconPath(eventType)
     },
     init() {
       feather.replace();
@@ -145,7 +146,7 @@ import {KeycloakInstance} from "keycloak-js";
       new Popover(el, {trigger: "hover"});
     });
   }
-,
+  ,
   beforeUpdate() {
     this.datatable.destroy();
     this.datatable = null;
@@ -155,9 +156,8 @@ import {KeycloakInstance} from "keycloak-js";
   }
 })
 export default class SelectEvent extends Vue {
-  events!: Array<any>
+  events!: Array<Api.Event>
   selectedEvent?: number
-  inscriptions!: Array<any>
 }
 </script>
 

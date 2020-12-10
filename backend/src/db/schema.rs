@@ -11,6 +11,8 @@ table! {
         localisation -> Text,
         event_date -> Timestamp,
         event_link -> Text,
+        created_at -> Timestamp,
+        user_id -> Int4,
     }
 }
 
@@ -22,8 +24,9 @@ table! {
         id -> Int4,
         user_id -> Int4,
         event_id -> Int4,
-        distance -> Text,
+        category -> Text,
         price -> Float4,
+        currency -> Varchar,
         intent -> Inscription_intentMapping,
         created_at -> Timestamp,
         note -> Text,
@@ -39,12 +42,13 @@ table! {
         id -> Int4,
         name -> Text,
         email -> Text,
-        contact_1 -> Nullable<Text>,
-        contact_2 -> Nullable<Text>,
-        contact_3 -> Nullable<Text>,
+        contact -> Text,
+        external_id -> Uuid,
+        last_logged -> Timestamp,
     }
 }
 
+joinable!(events -> users (user_id));
 joinable!(inscriptions -> events (event_id));
 joinable!(inscriptions -> users (user_id));
 
