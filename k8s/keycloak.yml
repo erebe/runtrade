@@ -5,13 +5,14 @@ metadata:
   labels:
     app: keycloak
 spec:
+  selector:
+    app: keycloak
   ports:
   - name: http
     port: 8080
-    targetPort: 8080
-  selector:
-    app: keycloak
-  type: LoadBalancer
+    protocol: TCP
+  type: ClusterIP
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -83,11 +84,12 @@ spec:
   tls:
     - hosts:
       - keycloak.erebe.dev
+      secretName: keycloak-tls
   rules:
   - host: keycloak.erebe.dev
     http:
       paths:
       - backend:
           serviceName: keycloak
-          servicePort: 8080
+          servicePort: http
 

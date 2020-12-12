@@ -47,7 +47,7 @@
               :data-content="this.getContact(user)" data-container="body" data-html="true" data-placement="auto"
               data-toggle="popover"
           >
-            <td>{{ user.name }}</td>
+            <td>{{ user.name }} <span v-if="(user.id === this.user.id)" @click="this.deleteInscription" title="delete your trade"><span data-feather="trash-2" color="red" ></span></span></td>
             <td>
               <i :data-feather="(inscription.intent === 'Buy') ? 'crosshair': 'dollar-sign'"></i> {{
                 inscription.intent
@@ -94,6 +94,7 @@ import {getAppContext} from "@/main";
     return {
       datatable: null,
       displayAddTrade: false,
+      user: getAppContext().user!
     }
   },
   methods: {
@@ -107,6 +108,9 @@ import {getAppContext} from "@/main";
     },
     getContact(user: User): string {
       return "User wish to be contact via<br/><a href='" + user.contact + "'>" + user.contact + "</a>"
+    },
+    deleteInscription(ev: MouseEvent) {
+     console.log("deleted");
     },
     createTrade(ev: MouseEvent) {
       ev.preventDefault();
@@ -140,5 +144,9 @@ export default class Trade extends Vue {
 
 .card-header h4 {
   width: 100%;
+}
+.feather-trash-2 {
+  width: 20px;
+  height: 20px;
 }
 </style>

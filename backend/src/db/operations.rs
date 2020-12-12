@@ -1,18 +1,19 @@
 #![allow(unused)]
 
 use chrono::{NaiveDateTime, NaiveTime, Utc};
+use chrono::format::Numeric::Timestamp;
 use diesel::{PgConnection, QueryResult};
+use diesel::pg::upsert::excluded;
 use diesel::prelude::*;
+
+use crate::db::model::Inscription;
+use crate::db::schema::users::columns::{contact, external_id, last_logged};
 
 use super::insertables::*;
 use super::model::{Event, User};
 use super::schema::events::columns::{event_date, event_link, localisation, name};
 use super::schema::events::dsl::events;
 use super::schema::users::dsl::{id, users};
-use crate::db::model::Inscription;
-use chrono::format::Numeric::Timestamp;
-use diesel::pg::upsert::excluded;
-use crate::db::schema::users::columns::{external_id, last_logged, contact};
 
 const MAX_RESULTS: i64 = 200;
 
@@ -84,12 +85,13 @@ pub fn delete_user(conn: &PgConnection, user_id: i32) -> QueryResult<usize> {
 pub fn find_events(conn: &PgConnection, event: &str) -> QueryResult<Vec<Event>> {
     use super::schema::events::id;
 
-    // let search_pat = format!("%{}%", event.replace(' ', "%"));
+    let sanitized_event = event.replace(';', " ")
+        .replace('\'', " ")
+        .replace('%', " ");
     let today = Utc::today().naive_utc();
     let midnight = NaiveTime::from_hms(0, 0, 0);
 
-    //let mut query = name.ilike(&search_pat);
-    let tokens: Vec<&str> = event.split( ' ')
+    let tokens: Vec<&str> = sanitized_event.trim().split(' ')
         .collect();
 
     let mut query = String::with_capacity(512);
@@ -100,20 +102,20 @@ pub fn find_events(conn: &PgConnection, event: &str) -> QueryResult<Vec<Event>> 
         OR event_link ILIKE '%{}%'
         OR "#, token, token, token).as_str();
     }
-    let queryF = format!(r#"
+    query = format!(r#"
     SELECT * FROM events
     WHERE {} AND event_date >= CURRENT_DATE
-    LIMIT {};"#, &query[..(query.len()-3)], MAX_RESULTS);
+    LIMIT {};"#, &query[..(query.len() - 3)], MAX_RESULTS);
 
-    diesel::sql_query(queryF).load::<Event>(conn)
+    debug!("{}", query);
+    diesel::sql_query(query).load::<Event>(conn)
 }
 
-pub fn get_event(conn: &PgConnection, event_id: i32) -> QueryResult<Event>{
+pub fn get_event(conn: &PgConnection, event_id: i32) -> QueryResult<Event> {
     use super::schema::events::id;
 
     events.filter(id.eq(event_id))
         .first(conn)
-
 }
 
 pub fn create_event(conn: &PgConnection, event: &NewEvent) -> QueryResult<Event> {
@@ -151,6 +153,7 @@ pub fn get_inscription_by_event_id(conn: &PgConnection, event_ids: i32) -> Query
         .inner_join(events)
         .load::<(Inscription, User, Event)>(conn)
 }
+
 pub fn upsert_inscription(conn: &PgConnection, inscription: &NewInscription) -> QueryResult<Inscription> {
     use super::schema::inscriptions::dsl::*;
 
@@ -169,14 +172,14 @@ mod test {
     use std::env;
 
     use chrono::{NaiveDateTime, Utc};
-    use diesel::{Connection, PgConnection, QueryResult, ExpressionMethods, RunQueryDsl};
+    use diesel::{Connection, ExpressionMethods, PgConnection, QueryResult, RunQueryDsl};
     use dotenv::dotenv;
 
-    use crate::db::insertables::{NewEvent, NewUser, NewInscription};
-    use crate::db::model::{Event, Event_type, Inscription_intent, Gender};
+    use crate::db::insertables::{NewEvent, NewInscription, NewUser};
+    use crate::db::model::{Event, Event_type, Gender, Inscription_intent};
     use crate::db::operations::{create_event, create_user, find_events, update_user, upsert_inscription};
-    use crate::db::schema::events::dsl::events;
     use crate::db::schema::events::columns::event_date;
+    use crate::db::schema::events::dsl::events;
 
     fn establish_connection() -> PgConnection {
         dotenv().ok();
@@ -194,7 +197,7 @@ mod test {
             email: "tata".to_string(),
             contact: "titi".to_string(),
             external_id: Default::default(),
-            last_logged: Utc::now().naive_utc()
+            last_logged: Utc::now().naive_utc(),
         };
 
         assert_eq!(create_user(&conn, &user).unwrap().name, user.name);
@@ -209,7 +212,7 @@ mod test {
             email: "tuta".to_string(),
             contact: "titi".to_string(),
             external_id: Default::default(),
-            last_logged: Utc::now().naive_utc()
+            last_logged: Utc::now().naive_utc(),
         };
         let user_id = create_user(&conn, &user).unwrap().id;
         user.name = "abcdefg".to_string();
@@ -243,7 +246,7 @@ mod test {
         //let events: QueryResult<Vec<Event>> = find_events(&conn, "tot");
         //assert_eq!(events.unwrap().len(), 1);
     }
-    
+
     #[test]
     fn create_fake_date() {
         let user1 = NewUser {
@@ -256,7 +259,7 @@ mod test {
             email: "romain.gerard@erebe.eu",
             contact_1: "facebook: https://www.facebook.com/erebe.dellu.16",
             contact_2: "email: nemesia.lilith@gmail.com",
-            contact_3: "telephone: 336597126xx"
+            contact_3: "telephone: 336597126xx",
         };
         let conn = establish_connection();
         let us1 = create_user(&conn, &user1).unwrap();
@@ -267,26 +270,26 @@ mod test {
             event_type: &Event_type::Run,
             localisation: "Valence Spain",
             event_date: &NaiveDateTime::from_timestamp(1706313552, 0),
-            event_link: "https://www.valenciaciudaddelrunning.com/fr/marathon_fr/42k/"
+            event_link: "https://www.valenciaciudaddelrunning.com/fr/marathon_fr/42k/",
         };
         let event2 = NewEvent {
             name: "Semi de Deauville",
             event_type: &Event_type::Run,
             localisation: "Deauville",
             event_date: &NaiveDateTime::from_timestamp(1706313552, 0),
-            event_link: "https://www.marathondeauville.fr/"
+            event_link: "https://www.marathondeauville.fr/",
         };
         let event3 = NewEvent {
             name: "Blagnac",
             event_type: &Event_type::Run,
             localisation: "Blagnac",
             event_date: &NaiveDateTime::from_timestamp(1615109893, 0),
-            event_link: "http://www.semi-blagnac.com/pages/index.php"
+            event_link: "http://www.semi-blagnac.com/pages/index.php",
         };
         let ev1 = create_event(&conn, &event1).unwrap();
         let ev2 = create_event(&conn, &event2).unwrap();
         let ev3 = create_event(&conn, &event3).unwrap();
-        
+
         let inscription1 = NewInscription {
             user_id: us1.id,
             event_id: ev1.id,

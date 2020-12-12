@@ -1,8 +1,7 @@
-#[macro_use]
-extern crate diesel;
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate log;
 extern crate dotenv;
-#[macro_use]
-extern crate lazy_static;
 
 mod db;
 mod api;
@@ -17,7 +16,7 @@ async fn main() -> std::io::Result<()> {
 
     // Logging
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "info");
+        std::env::set_var("RUST_LOG", "debug");
     }
 
     env_logger::init();
