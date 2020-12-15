@@ -5,19 +5,17 @@ SET client_encoding = 'UTF8';
 
 CREATE TABLE users
 (
-    id          SERIAL PRIMARY KEY,
+    id          uuid PRIMARY KEY   DEFAULT uuid_generate_v4(),
     name        TEXT      NOT NULL CHECK (name <> ''),
     email       TEXT      NOT NULL CHECK (email <> ''),
     contact     TEXT      NOT NULL,
-    external_id uuid      NOT NULL DEFAULT uuid_generate_v4(),
     last_logged TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX idx_users_email_btree ON users (email);
-CREATE UNIQUE INDEX idx_users_externalid_btree ON users (external_id);
 
 INSERT INTO users
-VALUES (1, 'admin', 'runtrade@erebe.eu', 'https://m.me/erebe.dellu.42', uuid_generate_v4(), to_timestamp(0));
+VALUES ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'admin', 'runtrade@erebe.eu', 'https://m.me/erebe.dellu.42', to_timestamp(0));
 
 
 CREATE TYPE EVENT_TYPE AS ENUM ('run', 'trail', 'cross', 'triathlon', 'ironman', 'bike', 'other');
@@ -31,7 +29,7 @@ CREATE TABLE events
     event_date   TIMESTAMP  NOT NULL,
     event_link   TEXT       NOT NULL,
     created_at   TIMESTAMP  NOT NULL,
-    user_id      SERIAL REFERENCES users (id) ON DELETE SET DEFAULT
+    user_id      uuid REFERENCES users (id) ON DELETE SET DEFAULT
 
 );
 CREATE INDEX idx_events_name_gin ON events USING gin (name gin_trgm_ops);
@@ -44,9 +42,9 @@ CREATE TYPE GENDER AS ENUM ('man', 'woman', 'other');
 CREATE TABLE inscriptions
 (
     id         SERIAL PRIMARY KEY,
-    user_id    SERIAL REFERENCES users (id) ON DELETE CASCADE,
+    user_id    uuid REFERENCES users (id) ON DELETE CASCADE,
     event_id   SERIAL REFERENCES events (id) ON DELETE CASCADE,
-    category   TEXT               NOT NULL CHECK (category <> ''),
+    category   TEXT               NOT NULL CHECK,
     price      REAL               NOT NULL CHECK (price >= 0.0),
     currency   VARCHAR(1)         NOT NULL CHECK (currency <> ''),
     intent     INSCRIPTION_INTENT NOT NULL,

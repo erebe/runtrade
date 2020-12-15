@@ -1,14 +1,14 @@
 <template>
   <div class="d-flex flex-column flex-md-row align-items-center p-1 px-md-4 mb-3 bg-white border-bottom shadow-sm">
       <span class="mr-2">
-          <img src="/favicon.png" id="logo">
+          <img width="60px" height="60px" src="/favicon.png" id="logo">
       </span>
     <h5 class="my-0 mr-md-auto font-weight-normal">RunTrade </h5>
-    <span id="signin-logo"><img src="/images/header.jpg"></span>
+    <span id="signin-logo"><img height="55px" width="99px" src="/images/header.webp"></span>
     <nav class="my-2 my-md-0 mr-md-3">
 <!--      <a class="p-2 text-dark" href="#">Your trades</a>-->
     </nav>
-    <img v-if="logged" id="userPicture" v-bind:src="userProfile.picture">
+    <img v-if="logged" id="userPicture" width="50px" height="50px" v-bind:src="userProfile.picture">
     <a v-else class="btn btn-primary" id="btn-sign" v-on:click="keycloak().login()" href="#">Sign In</a>
   </div>
 
@@ -19,15 +19,17 @@
 
   <div class="container">
     <!--    STEP I-->
-    <SearchEvent :eventSearch="this.searchEvent" v-model:events="this.events"></SearchEvent>
+    <SearchEvent v-model:searchEvent="searchEvent" v-model:events="events"></SearchEvent>
 
     <!--    STEP II-->
-    <SelectEvent v-if="displaySelectEvent" :events="events"
-                 v-model:selectedEvent="this.selectedEvent"
+    <SelectEvent v-if="displaySelectEvent"
+                 :events="events"
+                 v-model:event="event"
+                 v-model:inscriptions="inscriptions"
     ></SelectEvent>
 
     <!--    STEP III-->
-    <Trade v-if="displayTrade" :event="this.event" :inscriptions="this.inscriptions"></Trade>
+    <Trade v-if="displayTrade" :event="event" v-model:inscriptions="inscriptions" :user="user"></Trade>
   </div>
 </template>
 
@@ -52,10 +54,10 @@ import {getAppContext} from "@/main";
     return {
       logged: false,
       userProfile: null,
+      user: null as unknown as Api.User,
 
       searchEvent: null,
       events: null as unknown as Array<Api.Event>,
-      selectedEvent: 0,
       event: null as unknown as Api.Event,
       inscriptions: null as unknown as Array<[Api.Inscription, Api.User, Api.Event]>,
 
@@ -64,7 +66,7 @@ import {getAppContext} from "@/main";
     };
   },
   methods: {
-    initStateFromUrl() {
+    async initStateFromUrl() {
       const hash = window.location.hash.substr(1);
       const result = hash.split('&').reduce(function (res: any, item) {
         const parts = item.split('=');
@@ -77,19 +79,18 @@ import {getAppContext} from "@/main";
         this.searchEvent = decodeURI(search);
       }
 
-      const path = window.location.pathname.split('/');
-      if (path.length == 3 && path[1] == "event") {
-        this.selectedEvent = parseInt(path[2]);
+      const event = (result as any).event;
+      if(!_.isUndefined(event)) {
+        this.event = (await Api.getEvent(parseInt(event))).data;
       }
 
     },
   },
-
-  beforeMount() {
+  created() {
     const token = localStorage.getItem("vue-token");
     const tokenRefresh = localStorage.getItem("vue-refresh-token");
     const keycloak = this.keycloak() as KeycloakInstance;
-    console.log(keycloak);
+
     keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((auth: boolean) => {
       if (this.keycloak().authenticated) {
         localStorage.setItem("vue-token", this.keycloak().token);
@@ -104,15 +105,16 @@ import {getAppContext} from "@/main";
 
         keycloak.loadUserProfile().then(user => {
           this.userProfile = user;
-          this.userProfile.picture = JSON.parse((user as any).attributes.picture)['url'];
+          this.userProfile.picture = (user as any).attributes.picture[0];
           this.logged = true;
 
           // eslint-disable-next-line @typescript-eslint/camelcase
-          Api.userLogged({name: user.username!, email: user.email!, contact: "", external_id: keycloak.subject!, last_logged: 0})
+          Api.userLogged({id: keycloak.subject!, name: user.username!, email: user.email!, contact: "", last_logged: 0})
               .then(response => {
                 getAppContext().user = response.data;
+                this.user = response.data;
               });
-        })
+        }).catch(err => console.error(err))
 
         setInterval(() => {
           keycloak.updateToken(70).then((success: boolean) => {
@@ -122,37 +124,38 @@ import {getAppContext} from "@/main";
             }
           });
 
-        }, 60000)
+        }, 60000);
+      } else {
+        localStorage.removeItem("vue-token");
+        localStorage.removeItem("vue-refresh-token");
       }
+
+      this.initStateFromUrl();
     });
-
-    this.initStateFromUrl();
   },
-  async beforeUpdate() {
-    if(!_.isNil(this.events)) {
-      this.displaySelectEvent = true;
-    }
-
-    this.displayTrade = (this.selectedEvent !== 0);
+  beforeUpdate() {
+    const findEvent = (_.isNil(this.searchEvent) || _.isEmpty(this.searchEvent)) ? '' : 'findEvent=' + encodeURI(this.searchEvent);
+    const event = (_.isNil(this.event)) ? '' : 'event=' + this.event.id;
+    const path = ('/#' + findEvent + '&' + event)
+        .replace(/#&/, '#')
+        .replace(/&$/, '');
+    history.pushState(null, "Runtrade", path);
+  },
+  updated() {
+    this.displaySelectEvent = (!_.isNil(this.events));
+    this.displayTrade = (!_.isNil(this.event) && !_.isNil(this.inscriptions));
   },
   watch: {
-    events: function() {
-      this.selectedEvent = 0;
+    searchEvent: function (newVal, oldVal) {
+      this.event = null;
     },
-    selectedEvent: async function (eventId, _oldVal) {
-      if (eventId === 0) {
-        history.pushState(null, "RunTrade", '/' + window.location.hash)
+    event: function (newVal, oldVal) {
+      if(_.isNil(newVal)) {
         return;
       }
-
-      history.pushState(null, "RunTrade", '/event/' + eventId + window.location.hash)
-      try {
-        const [inscriptions, event] = await Promise.all([Api.getInscriptionForEvent(eventId), Api.getEvent(eventId)]);
-        this.inscriptions = inscriptions.data;
-        this.event = event.data;
-      } catch (err) {
-        console.error(err);
-      }
+       if(_.isNil(this.events)) {
+         this.events = [newVal];
+       }
     }
   }
 })

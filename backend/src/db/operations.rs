@@ -7,20 +7,21 @@ use diesel::pg::upsert::excluded;
 use diesel::prelude::*;
 
 use crate::db::model::Inscription;
-use crate::db::schema::users::columns::{contact, external_id, last_logged};
+use crate::db::schema::users::columns::{contact, last_logged};
 
 use super::insertables::*;
 use super::model::{Event, User};
 use super::schema::events::columns::{event_date, event_link, localisation, name};
 use super::schema::events::dsl::events;
 use super::schema::users::dsl::{id, users};
+use uuid::Uuid;
 
 const MAX_RESULTS: i64 = 200;
 
 //
 // USERS
 //
-pub fn get_user(conn: &PgConnection, user_id: i32) -> QueryResult<User> {
+pub fn get_user(conn: &PgConnection, user_id: &Uuid) -> QueryResult<User> {
     use super::schema::users::id;
 
     users.filter(id.eq(user_id))
@@ -34,29 +35,22 @@ pub fn get_user_by_name(conn: &PgConnection, user_name: &str) -> QueryResult<Use
         .first::<User>(conn)
 }
 
-pub fn get_user_by_external_id(conn: &PgConnection, user_external_id: &uuid::Uuid) -> QueryResult<User> {
-    users.filter(external_id.eq(user_external_id))
-        .first::<User>(conn)
-}
-
 pub fn create_user(conn: &PgConnection, user: &NewUser) -> QueryResult<User> {
     diesel::insert_into(users)
         .values(user)
         .get_result(conn)
 }
 
-pub fn update_user_last_logged(conn: &PgConnection, user: &NewUser) -> QueryResult<User> {
-    use super::schema::users::id;
-
+pub fn update_user_last_logged(conn: &PgConnection, user: &User) -> QueryResult<User> {
     diesel::insert_into(users)
         .values(user)
-        .on_conflict(external_id)
+        .on_conflict(id)
         .do_update()
         .set(last_logged.eq(excluded(last_logged)))
         .get_result(conn)
 }
 
-pub fn update_user(conn: &PgConnection, user_id: i32, user: &NewUser) -> QueryResult<User> {
+pub fn update_user(conn: &PgConnection, user_id: &Uuid, user: &NewUser) -> QueryResult<User> {
     use super::schema::users::id;
 
     diesel::update(users.filter(id.eq(user_id)))
@@ -64,7 +58,7 @@ pub fn update_user(conn: &PgConnection, user_id: i32, user: &NewUser) -> QueryRe
         .get_result(conn)
 }
 
-pub fn update_user_contact(conn: &PgConnection, user_id: i32, user_contact: &str) -> QueryResult<User> {
+pub fn update_user_contact(conn: &PgConnection, user_id: &Uuid, user_contact: &str) -> QueryResult<User> {
     use super::schema::users::id;
 
     diesel::update(users.filter(id.eq(user_id)))
@@ -72,7 +66,7 @@ pub fn update_user_contact(conn: &PgConnection, user_id: i32, user_contact: &str
         .get_result(conn)
 }
 
-pub fn delete_user(conn: &PgConnection, user_id: i32) -> QueryResult<usize> {
+pub fn delete_user(conn: &PgConnection, user_id: &Uuid) -> QueryResult<usize> {
     use super::schema::users::id;
 
     diesel::delete(users.filter(id.eq(user_id)))
@@ -85,14 +79,11 @@ pub fn delete_user(conn: &PgConnection, user_id: i32) -> QueryResult<usize> {
 pub fn find_events(conn: &PgConnection, event: &str) -> QueryResult<Vec<Event>> {
     use super::schema::events::id;
 
-    let sanitized_event = event.replace(';', " ")
+    let event = event.replace(';', " ")
         .replace('\'', " ")
         .replace('%', " ");
-    let today = Utc::today().naive_utc();
-    let midnight = NaiveTime::from_hms(0, 0, 0);
 
-    let tokens: Vec<&str> = sanitized_event.trim().split(' ')
-        .collect();
+    let tokens: Vec<&str> = event.trim().split(' ').collect();
 
     let mut query = String::with_capacity(512);
     for token in tokens.iter() {
@@ -164,6 +155,15 @@ pub fn upsert_inscription(conn: &PgConnection, inscription: &NewInscription) -> 
         .do_update()
         .set(created_at.eq(excluded(created_at)))
         .get_result(conn)
+}
+
+pub fn delete_inscription(conn: &PgConnection, inscription_id: i32, uuid: &Uuid) -> QueryResult<Inscription> {
+    use super::schema::inscriptions::dsl::*;
+
+    diesel::delete(inscriptions)
+        .filter(id.eq(inscription_id)
+            .and(user_id.eq(uuid))
+        ).get_result(conn)
 }
 
 #[cfg(feature = "functional_tests")]
@@ -337,3 +337,4 @@ mod test {
         upsert_inscription(&conn, &inscription4).unwrap();
     }
 }
+

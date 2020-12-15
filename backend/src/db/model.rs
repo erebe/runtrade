@@ -8,7 +8,7 @@ use chrono::naive::serde::ts_seconds;
 use serde::{ Serialize, Deserialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use super::schema::events;
+use super::schema::{events, users};
 
 use lazy_static;
 use uuid::Uuid;
@@ -55,13 +55,13 @@ pub struct Event {
     pub event_link: String,
     #[serde(with = "ts_seconds")]
     pub created_at: NaiveDateTime,
-    pub user_id: i32
+    pub user_id: Uuid
 }
 
 #[derive(Queryable, Serialize, Debug)]
 pub struct Inscription {
     pub id: i32,
-    pub user_id: i32,
+    pub user_id: Uuid,
     pub event_id: i32,
     pub category: String,
     pub price: f32,
@@ -73,13 +73,13 @@ pub struct Inscription {
     pub gender: Gender,
 }
 
-#[derive(Queryable, Serialize, Debug)]
+#[derive(Queryable, Insertable, Serialize, Deserialize, Debug)]
+#[table_name="users"]
 pub struct User {
-    pub id: i32,
+    pub id: Uuid,
     pub name: String,
     pub email: String,
     pub contact: String,
-    pub external_id: Uuid,
     #[serde(with = "ts_seconds")]
     pub last_logged: NaiveDateTime,
 }

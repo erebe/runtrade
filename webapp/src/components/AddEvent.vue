@@ -125,10 +125,10 @@ import {getAppContext} from "@/main";
       event.event_date = new Date(event.event_date).getTime() / 1000;
       this.loading = true;
       Api.addEvent(event).then((response) => {
-        window.location.hash = '#findEvent=' + encodeURI(response.data.name);
-        window.location.pathname = '/event/' + response.data.id;
+        window.location.hash = '#event=' + response.data.id;
+        window.location.reload();
+
       }).catch((err) => {
-        console.log('failure');
         console.log(err);
       });
 

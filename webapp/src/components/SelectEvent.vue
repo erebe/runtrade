@@ -8,7 +8,7 @@
         </span>
         <span class="pt-1">
           <h4 class="my-sm-0 font-weight-normal">
-            <span><img src="/images/steady.png"></span> Choose your Event
+            <span><img width="37" height="29" src="/images/steady.webp"></span> Choose your Event
           </h4>
         </span>
         <span class="m-0 px-0">
@@ -84,18 +84,18 @@ import { PropType } from 'vue';
   },
   props: {
     events: Object as PropType<Api.Event[]>,
-    selectedEvent: Number,
   },
-  emits: ['update:selectedEvent', 'update:event'],
+  emits: ['update:event', 'update:inscriptions'],
   data: () => {
     return {
       datatable: null,
       retrievingEvent: false,
       displayAddEvent: false,
+      selectedEvent: null,
     }
   },
   methods: {
-    createEvent(ev: MouseEvent) {
+    async createEvent(ev: MouseEvent) {
       ev.preventDefault();
       const keycloak = this.keycloak() as KeycloakInstance;
       if (!keycloak.authenticated) {
@@ -103,20 +103,26 @@ import { PropType } from 'vue';
       }
       this.displayAddEvent = true;
     },
-    async eventSelected(ev: MouseEvent) {
-      // do nothing if user click on a link
-      if ((ev.target as HTMLElement).nodeName == "A") {
+    async eventSelected(ev: MouseEvent | null) {
+      if(_.isNil(ev) && this.events.length > 1) {
         return;
       }
 
-      ev.preventDefault();
-      console.log(this);
+      // do nothing if user click on a link
+      if ((ev?.target as HTMLElement).nodeName == "A") {
+        return;
+      }
+
+      ev?.preventDefault();
+      const eventId = _.isNil(ev)
+          ? this.events[0].id
+          : parseInt((ev.target as HTMLTableCellElement).dataset.eventid!);
       this.retrievingEvent = true;
       try {
         // Find events
-        const eventId = parseInt((ev.target as HTMLTableCellElement).dataset.eventid!);
-        this.$emit('update:selectedEvent', eventId);
+        const inscriptions = await Api.getInscriptionForEvent(eventId)
         this.$emit('update:event', _.find(this.events, ev => ev.id === eventId));
+        this.$emit('update:inscriptions', inscriptions.data);
 
       } catch (error) {
         console.error(error);
@@ -140,11 +146,12 @@ import { PropType } from 'vue';
       this.datatable = $('#events').DataTable({pageLength: 10, deferRender: true});
     }
   },
-  mounted() {
+  async mounted() {
     this.init();
     $('#eventsContainer [data-toggle="popover"]').get().forEach((el) => {
       new Popover(el, {trigger: "hover"});
     });
+    await this.eventSelected(null);
   }
   ,
   beforeUpdate() {
@@ -157,7 +164,6 @@ import { PropType } from 'vue';
 })
 export default class SelectEvent extends Vue {
   events!: Array<Api.Event>
-  selectedEvent?: number
 }
 </script>
 

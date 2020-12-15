@@ -1,24 +1,29 @@
-use actix_web::{web, Error, HttpResponse, get, put};
+use actix_web::{web, Error, HttpResponse, get, put, delete};
 use crate::db::DbPool;
 use crate::db;
+use crate::db::insertables::{NewEvent, NewInscription};
+
+use super::auth::Authorized;
 
 use std::borrow::Borrow;
 use std::ops::Deref;
-use crate::db::insertables::{NewEvent, NewInscription, NewUser};
 use chrono::{NaiveDateTime, Utc};
+use uuid::Uuid;
+use crate::db::model::User;
 
 pub async fn cors_event() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok()
         .header("Access-Control-Allow-Origin", "http://localhost:8080")
-        .header("Access-Control-Allow-Methods", "PUT, GET, OPTIONS")
+        .header("Access-Control-Allow-Methods", "PUT, GET, DELETE, OPTIONS")
         .header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         .body(""))
 }
 
 #[put("/api/v1/event")]
-pub async fn add_event(mut payload: web::Json<NewEvent>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+pub async fn add_event(auth: Authorized, mut payload: web::Json<NewEvent>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
         payload.name = payload.name.to_lowercase();
+        payload.user_id = auth.sub;
         db::operations::create_event(db.get().unwrap().borrow(), &payload)
     })
         .await
@@ -55,9 +60,9 @@ pub async fn get_event(path: web::Path<i32>, db: web::Data<DbPool>) -> Result<Ht
 }
 
 #[get("/api/v1/user/id/{id}")]
-pub async fn get_user_by_id(path: web::Path<i32>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+pub async fn get_user_by_id(path: web::Path<Uuid>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
-        db::operations::get_user(db.get().unwrap().borrow(), path.0)
+        db::operations::get_user(db.get().unwrap().borrow(), &path.0)
     })
         .await
         .map(|video| HttpResponse::Ok().json(video))
@@ -65,10 +70,10 @@ pub async fn get_user_by_id(path: web::Path<i32>, db: web::Data<DbPool>) -> Resu
     Ok(res)
 }
 
-#[put("/api/v1/user/{id}/contact")]
-pub async fn update_user_contact(path: web::Path<i32>, payload: web::Json<String>,  db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+#[put("/api/v1/user/contact")]
+pub async fn update_user_contact(auth: Authorized, payload: web::Json<String>,  db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
-        db::operations::update_user_contact(db.get().unwrap().borrow(), path.0, &payload)
+        db::operations::update_user_contact(db.get().unwrap().borrow(), &auth.sub, &payload)
     })
         .await
         .map(|video| HttpResponse::Ok().json(video))
@@ -88,9 +93,10 @@ pub async fn get_user_by_name(path: web::Path<String>, db: web::Data<DbPool>) ->
 }
 
 #[put("/api/v1/user/logged")]
-pub async fn put_user_logged(mut logged_user: web::Json<NewUser>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+pub async fn put_user_logged(auth: Authorized, mut logged_user: web::Json<User>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
         logged_user.last_logged = NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0);
+        logged_user.id = auth.sub;
         let conn = db.get().unwrap();
         db::operations::update_user_last_logged(&conn, &logged_user)
     })
@@ -112,10 +118,22 @@ pub async fn get_inscriptions_by_event_id(path: web::Path<i32>, db: web::Data<Db
 }
 
 #[put("/api/v1/inscription")]
-pub async fn add_inscription(mut payload: web::Json<NewInscription>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+pub async fn add_inscription(auth: Authorized, mut payload: web::Json<NewInscription>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let res = web::block(move || {
         payload.created_at = NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0);
+        payload.user_id = auth.sub;
         db::operations::upsert_inscription(db.get().unwrap().borrow(), &payload)
+    })
+        .await
+        .map(|inscription| HttpResponse::Ok().json(inscription))
+        .map_err(|err| HttpResponse::InternalServerError().body(err.to_string()))?;
+    Ok(res)
+}
+
+#[delete("/api/v1/inscription/{id}")]
+pub async fn delete_inscription(auth: Authorized, path: web::Path<i32>, db: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let res = web::block(move || {
+        db::operations::delete_inscription(db.get().unwrap().borrow(), path.0, &auth.sub)
     })
         .await
         .map(|inscription| HttpResponse::Ok().json(inscription))

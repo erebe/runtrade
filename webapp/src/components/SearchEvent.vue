@@ -1,9 +1,9 @@
 <template>
   <!--    STEP I-->
-  <div v-if="displayFindEvent" class="card-deck mb-4 text-center">
+  <div class="card-deck mb-4 text-center">
     <div class="card mb-4 shadow-sm">
       <div class="card-header">
-        <h4 class="my-0 font-weight-normal"><span><img src="/images/ready.png"></span>  Find your Event</h4>
+        <h4 class="my-0 font-weight-normal"><span><img width="33" height="29" src="/images/ready.webp"></span>  Find your Event</h4>
       </div>
       <div class="card-body">
         <form v-on:submit="findEvent">
@@ -42,17 +42,16 @@ import {findEventByName} from "@/api";
 
 @Options({
   props: {
-    eventSearch: String,
+    searchEvent: String,
     events: Array,
   },
   data: () => {
     return {
-      displayFindEvent: true,
       searchingEvent: false,
       eventName: null,
     }
   },
-  emits: ['update:events'],
+  emits: ['update:events', 'update:searchEvent'],
   methods: {
     async findEvent(ev: Event) {
       ev.preventDefault();
@@ -61,13 +60,9 @@ import {findEventByName} from "@/api";
         // Find events
         const response = await findEventByName(this.eventName)
         this.$emit('update:events', response.data);
-
-        // Transition to new state
-        this.displaySelectEvent = true;
         if(ev.type !== 'none') {
-          window.location.hash = "#findEvent=" + encodeURI(this.eventName);
+          this.$emit('update:searchEvent', this.eventName);
         }
-
       } catch (error) {
         console.error(error);
       }
@@ -75,14 +70,14 @@ import {findEventByName} from "@/api";
     },
   },
   mounted() {
-    if(!_.isEmpty(this.eventSearch)) {
-      this.eventName = this.eventSearch;
+    if(!_.isEmpty(this.searchEvent)) {
+      this.eventName = this.searchEvent;
       this.findEvent(new MouseEvent('none'));
     }
   }
 })
 export default class SearchEvent extends Vue {
-  eventSearch!: string
+  searchEvent!: string
   events!: Array<any>
 }
 </script>

@@ -12,7 +12,6 @@ pub struct NewUser {
     pub name: String,
     pub email: String,
     pub contact: String,
-    pub external_id: Uuid,
     #[serde(with = "ts_seconds")]
     pub last_logged: NaiveDateTime
 }
@@ -28,12 +27,12 @@ pub struct NewEvent {
     pub event_link: String,
     #[serde(with = "ts_seconds")]
     pub created_at: NaiveDateTime,
-    pub user_id: i32,
+    pub user_id: Uuid,
 }
 #[derive(Insertable, AsChangeset, Deserialize, Debug)]
 #[table_name="inscriptions"]
 pub struct NewInscription {
-    pub user_id: i32,
+    pub user_id: Uuid,
     pub event_id: i32,
     pub category: String,
     pub price: f32,

@@ -7,7 +7,7 @@
         <span class="col-2 d-none d-md-inline-flex"></span>
         <span>
           <h4 class="my-sm-0 font-weight-normal">
-            <span><img src="/images/go.png"></span>  Trade
+            <span><img width="28" height="35" src="/images/go.webp"></span>  Trade
           </h4>
         </span>
         <span class="mx-0 px-0">
@@ -26,7 +26,7 @@
       </div>
 
       <div class="card-body table-responsive-sm">
-        <h5>{{ event?.name }}</h5>
+        <h5>{{ capitalize(event.name) }}</h5>
         <table id="trades" class="table table-sm table-hover text-left"
                data-order='[[ 1, "desc" ], [4, "desc"], [3, "asc"], [6, "asc"]]'>
           <thead>
@@ -47,7 +47,18 @@
               :data-content="this.getContact(user)" data-container="body" data-html="true" data-placement="auto"
               data-toggle="popover"
           >
-            <td>{{ user.name }} <span v-if="(user.id === this.user.id)" @click="this.deleteInscription" title="delete your trade"><span data-feather="trash-2" color="red" ></span></span></td>
+            <td>
+              <span v-if="(user.id === this.user?.id)" @click="this.deleteInscription(inscription)" title="delete your trade">
+                <span data-feather="trash-2" color="red" ></span>
+                {{ user.name }}
+              </span>
+              <span v-else>
+              <a :href="(user.contact.indexOf('@') >= 0) ? 'mailto:' + user.contact : user.contact" target="_blank" rel="noopener noreferrer">
+                <span data-feather="send"></span>
+                {{ user.name }}
+              </a>
+              </span>
+            </td>
             <td>
               <i :data-feather="(inscription.intent === 'Buy') ? 'crosshair': 'dollar-sign'"></i> {{
                 inscription.intent
@@ -78,7 +89,8 @@ import 'datatables.net-bs4/css/dataTables.bootstrap4.min.css'
 import feather from 'feather-icons'
 import {Popover} from "bootstrap";
 import * as Api from '@/api';
-import {User} from '@/api';
+import _ from "lodash";
+import {Inscription, User} from '@/api';
 import {PropType} from 'vue';
 import {getAppContext} from "@/main";
 
@@ -87,30 +99,48 @@ import {getAppContext} from "@/main";
     AddTrade,
   },
   props: {
+    user: Object as PropType<Api.User>,
     event: Object as PropType<Api.Event>,
-    inscriptions: Object as PropType<Array<[Api.Inscription, Api.User, Api.Event]>>
+    inscriptions: Array as PropType<Array<[Api.Inscription, Api.User, Api.Event]>>
   },
   data: () => {
     return {
       datatable: null,
       displayAddTrade: false,
-      user: getAppContext().user!
     }
   },
+  emits: ['update:inscriptions'],
   methods: {
+    capitalize(str: string): string {
+      return _.capitalize(str);
+    },
     init(): void {
       this.datatable = $('#trades').DataTable({pageLength: 50, deferRender: true});
       $('#tradesContainer [data-toggle="popover"]').get().forEach((el) => {
-        new Popover(el, {trigger: "hover", delay: {show: 0, hide: 1000}});
+        (el as any).popover = new Popover(el, {trigger: "hover", delay: {show: 0, hide: 1000}});
       });
       feather.replace();
       document.getElementById("tradesContainer")?.scrollIntoView({behavior: "smooth"});
     },
     getContact(user: User): string {
-      return "User wish to be contact via<br/><a href='" + user.contact + "'>" + user.contact + "</a>"
+      const contact = (user.contact.indexOf("@") >= 0)
+          ? 'mailto:' + user.contact
+          : user.contact;
+      return _.capitalize(user.name) +
+          " wish to be contacted via<br/><a target='_blank' rel='noopener noreferrer' href='" + contact + "'>" +
+          user.contact + "</a>"
     },
-    deleteInscription(ev: MouseEvent) {
-     console.log("deleted");
+    async deleteInscription(ev: Inscription) {
+      await Api.deleteInscription(ev.id!);
+      $('#tradesContainer [data-toggle="popover"]').get().forEach((el) => {
+        (el as any).popover.dispose();
+      });
+      $(".popover").remove();
+
+      _.remove(this.inscriptions, (inscription: [Inscription]) => inscription[0].id === ev.id)
+      this.$emit('update:inscriptions', this.inscriptions);
+
+      // window.location.reload();
     },
     createTrade(ev: MouseEvent) {
       ev.preventDefault();
@@ -134,6 +164,7 @@ import {getAppContext} from "@/main";
   },
 })
 export default class Trade extends Vue {
+  user?: Api.User
   event!: Api.Event
   inscriptions!: Array<[Api.Inscription, Api.User, Api.Event]>
 }
@@ -145,7 +176,7 @@ export default class Trade extends Vue {
 .card-header h4 {
   width: 100%;
 }
-.feather-trash-2 {
+.feather-trash-2, .feather-send {
   width: 20px;
   height: 20px;
 }

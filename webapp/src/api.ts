@@ -2,16 +2,15 @@
 import Axios, {AxiosResponse} from "axios";
 
 export interface User {
-    id?: number;
+    id?: string;
     name: string;
     contact: string;
     email: string;
     last_logged: number;
-    external_id: string;
 }
 
 export function newUser(): User {
-    return {contact: "", email: "", external_id: "", last_logged: Math.floor((new Date()).getTime() / 1000), name: ""};
+    return {contact: "", email: "", last_logged: Math.floor((new Date()).getTime() / 1000), name: ""};
 }
 
 export interface Event {
@@ -22,7 +21,7 @@ export interface Event {
     event_date: number | string;
     event_link: string;
     created_at: number;
-    user_id: number;
+    user_id: string;
 }
 
 export function newEvent(user: User): Event {
@@ -39,7 +38,7 @@ export function newEvent(user: User): Event {
 
 export interface Inscription {
     id?: number;
-    user_id: number;
+    user_id: string;
     event_id: number;
     category: string;
     price: number;
@@ -64,39 +63,45 @@ export function newInscription(user: User, event: Event): Inscription {
     };
 }
 
+const HOSTNAME = '';
+//const HOSTNAME = 'http://localhost:8081';
+export function deleteInscription(inscriptionID: number): Promise<AxiosResponse<boolean>> {
+    return Axios.delete(HOSTNAME + '/api/v1/inscription/' + inscriptionID);
+}
+
 export function updateUserContact(user: User, contact: string): Promise<AxiosResponse<User>> {
-    return Axios.put('http://localhost:8081/api/v1/user/' + user.id + '/contact',
+    return Axios.put(HOSTNAME + '/api/v1/user/contact',
         JSON.stringify(contact),
         {headers: {'Content-Type': 'application/json'}}
     );
 }
 
 export function findEventByName(eventName: string): Promise<AxiosResponse<Array<Event>>> {
-    return Axios.get('http://localhost:8081/api/v1/events/search/' + encodeURI(eventName));
+    return Axios.get(HOSTNAME + '/api/v1/events/search/' + encodeURI(eventName));
 }
 
 export function userLogged(user: User): Promise<AxiosResponse<User>> {
-    return Axios.put('http://localhost:8081/api/v1/user/logged', user);
+    return Axios.put(HOSTNAME + '/api/v1/user/logged', user);
 }
 
 export function addEvent(event: Event): Promise<AxiosResponse<Event>> {
-    return Axios.put('http://localhost:8081/api/v1/event', event);
+    return Axios.put(HOSTNAME + '/api/v1/event', event);
 }
 
 export function addTrade(trade: Inscription): Promise<AxiosResponse<Inscription>> {
-    return Axios.put('http://localhost:8081/api/v1/inscription', trade);
+    return Axios.put(HOSTNAME + '/api/v1/inscription', trade);
 }
 
 export function getEvent(eventId: number): Promise<AxiosResponse<Event>> {
-    return Axios.get('http://localhost:8081/api/v1/event/' + eventId);
+    return Axios.get(HOSTNAME + '/api/v1/event/' + eventId);
 }
 
 export function getEventTypes(): Promise<AxiosResponse> {
-    return Axios.get('http://localhost:8081/api/v1/event/types');
+    return Axios.get(HOSTNAME + '/api/v1/event/types');
 }
 
 export function getInscriptionForEvent(eventId: number): Promise<AxiosResponse<Array<[User, Inscription, Event]>>> {
-    return Axios.get('http://localhost:8081/api/v1/inscriptions/event_id/' + eventId);
+    return Axios.get(HOSTNAME + '/api/v1/inscriptions/event_id/' + eventId);
 }
 
 export function eventTypeToSvgIconPath(eventType: string) {
