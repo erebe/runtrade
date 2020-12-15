@@ -23,6 +23,11 @@ metadata:
     app: runtrade
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: runtrade
@@ -35,8 +40,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: runtrade
-        image: ghcr.io/erebe/runtrade:latest
-        imagePullPolicy: Always
+        image: ghcr.io/erebe/runtrade
         env:
         - name: DATABASE_URL
           valueFrom:
