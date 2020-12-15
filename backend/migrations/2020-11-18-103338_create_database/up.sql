@@ -44,7 +44,7 @@ CREATE TABLE inscriptions
     id         SERIAL PRIMARY KEY,
     user_id    uuid REFERENCES users (id) ON DELETE CASCADE,
     event_id   SERIAL REFERENCES events (id) ON DELETE CASCADE,
-    category   TEXT               NOT NULL CHECK,
+    category   TEXT               NOT NULL,
     price      REAL               NOT NULL CHECK (price >= 0.0),
     currency   VARCHAR(1)         NOT NULL CHECK (currency <> ''),
     intent     INSCRIPTION_INTENT NOT NULL,

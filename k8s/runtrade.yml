@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: runtrade
+  labels:
+    app: runtrade
+spec:
+  selector:
+    app: runtrade
+  ports:
+  - name: http
+    port: 8086
+    protocol: TCP
+  type: ClusterIP
+  clusterIP: None
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runtrade
+  labels:
+    app: runtrade
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: runtrade
+  template:
+    metadata:
+      labels:
+        app: runtrade
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: runtrade
+        image: ghcr.io/erebe/runtrade:latest
+        imagePullPolicy: Always
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: runtrade-secret
+              key: database_url
+        - name: JWK_N
+          valueFrom:
+            secretKeyRef:
+              name: runtrade-secret
+              key: jwk_n
+        - name: JWK_E
+          valueFrom:
+            secretKeyRef:
+              name: runtrade-secret
+              key: jwk_e
+        - name: RUST_LOG
+          value: "info"
+        - name: PORT
+          value: "8086"
+        - name: WEBAPP_DIR_PATH
+          value: "/home/app/dist"
+        ports:
+        - name: http
+          containerPort: 8086
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: runtrade
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+      - runtrade.erebe.dev
+      secretName: runtrade-tls
+  rules:
+  - host: runtrade.erebe.dev
+    http:
+      paths:
+      - backend:
+          serviceName: runtrade
+          servicePort: http
+
