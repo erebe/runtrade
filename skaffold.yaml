@@ -3,10 +3,13 @@ kind: Config
 metadata:
   name: runtrade
 build:
+  tagPolicy:
+    gitCommit: {}
+  artifacts:
+    - image: gcr.io/erebe/runtrade
   local:
     useBuildkit: true
-    #  artifacts:
-    #  - image: erebe/couber
+    # push: true
 deploy:
   kubectl:
     defaultNamespace: "runtrade"
