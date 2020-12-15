@@ -9,7 +9,7 @@ build:
     - image: ghcr.io/erebe/runtrade
   local:
     useBuildkit: true
-    # push: true
+    push: true
 deploy:
   kubectl:
     defaultNamespace: "runtrade"
