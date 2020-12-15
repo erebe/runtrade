@@ -6,7 +6,7 @@ build:
   tagPolicy:
     gitCommit: {}
   artifacts:
-    - image: gcr.io/erebe/runtrade
+    - image: ghcr.io/erebe/runtrade
   local:
     useBuildkit: true
     # push: true
