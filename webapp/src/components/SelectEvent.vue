@@ -53,7 +53,7 @@
             <td v-bind:data-eventid="event.id">{{ event.localisation }}</td>
             <td v-bind:data-eventid="event.id">{{ formatDate(event.event_date) }}</td>
             <td class="text-justify" v-bind:data-eventid="event.id">
-              <a rel="noopener noreferrer" target="_blank" v-bind:href="event.event_link">{{ event.event_link }}</a>
+              <a rel="noopener noreferrer" target="_blank" v-bind:href="event.event_link">Official website</a>
             </td>
           </tr>
 
