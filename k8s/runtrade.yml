@@ -81,6 +81,7 @@ spec:
   tls:
     - hosts:
       - runtrade.erebe.dev
+      - runtrade.run
       secretName: runtrade-tls
   rules:
   - host: runtrade.erebe.dev
@@ -89,4 +90,9 @@ spec:
       - backend:
           serviceName: runtrade
           servicePort: http
-
+  - host: runtrade.run
+    http:
+      paths:
+      - backend:
+          serviceName: runtrade
+          servicePort: http
