@@ -10,7 +10,7 @@
           <div class="form-group row">
             <label for="runNameSearch" class="col-sm-2 col-form-label pr-0">Event Name</label>
             <div class="col-sm-8">
-              <input v-model.trim="eventName" type="text" class="form-control" id="runNameSearch" placeholder="Name of your event (i.e: Marathon Valencia)">
+              <input v-model.trim="eventName" ref="search" type="text" class="form-control" id="runNameSearch" placeholder="Name of your event (i.e: Marathon Valencia)">
             </div>
 
             <!-- SEARCH BUTTON-->
@@ -55,6 +55,11 @@ import {findEventByName} from "@/api";
   methods: {
     async findEvent(ev: Event) {
       ev.preventDefault();
+      if(_.isNil(this.eventName) || _.isEmpty(this.eventName)) {
+        this.$refs.search.classList.add("is-invalid");
+        return;
+      }
+
       this.searchingEvent = true;
       try {
         // Find events
@@ -69,10 +74,18 @@ import {findEventByName} from "@/api";
       this.searchingEvent = false;
     },
   },
-  mounted() {
-    if(!_.isEmpty(this.searchEvent)) {
-      this.eventName = this.searchEvent;
-      this.findEvent(new MouseEvent('none'));
+  updated() {
+    this.$refs.search.classList.remove("is-invalid");
+  },
+  watch: {
+    searchEvent: {
+      immediate: true,
+      handler: function (newVal, oldVal) {
+        if(_.isNil(oldVal) && !_.isEmpty(newVal)) {
+          this.eventName = this.searchEvent;
+          this.findEvent(new MouseEvent('none'));
+        }
+      }
     }
   }
 })

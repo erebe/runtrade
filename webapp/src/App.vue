@@ -148,6 +148,7 @@ import {getAppContext} from "@/main";
   watch: {
     searchEvent: function (newVal, oldVal) {
       this.event = null;
+      console.log(newVal);
     },
     event: function (newVal, oldVal) {
       if(_.isNil(newVal)) {
