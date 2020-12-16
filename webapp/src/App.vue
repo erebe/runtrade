@@ -75,13 +75,15 @@ import {getAppContext} from "@/main";
       }, {});
 
       const search = (result as any).findEvent;
-      if(!_.isUndefined(search)) {
-        this.searchEvent = decodeURI(search);
-      }
 
       const event = (result as any).event;
       if(!_.isUndefined(event)) {
         this.event = (await Api.getEvent(parseInt(event))).data;
+        return;
+      }
+
+      if(!_.isUndefined(search)) {
+        this.searchEvent = decodeURI(search);
       }
 
     },
@@ -148,7 +150,6 @@ import {getAppContext} from "@/main";
   watch: {
     searchEvent: function (newVal, oldVal) {
       this.event = null;
-      console.log(newVal);
     },
     event: function (newVal, oldVal) {
       if(_.isNil(newVal)) {
