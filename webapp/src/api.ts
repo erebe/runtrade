@@ -63,8 +63,7 @@ export function newInscription(user: User, event: Event): Inscription {
     };
 }
 
-const HOSTNAME = '';
-// const HOSTNAME = 'http://localhost:8081';
+const HOSTNAME = process.env.API_HOSTNAME;
 export function deleteInscription(inscriptionID: number): Promise<AxiosResponse<boolean>> {
     return Axios.delete(HOSTNAME + '/api/v1/inscription/' + inscriptionID);
 }

@@ -6,7 +6,11 @@ import 'bootstrap-vue/dist/bootstrap-vue.css'
 import Keycloak, {KeycloakInstance} from "keycloak-js";
 import {User} from "@/api";
 
-const keycloak = Keycloak({url: 'https://keycloak.erebe.dev/auth', realm: 'runtrade-dev', clientId: 'webapp'});
+const keycloak = Keycloak({
+    url: process.env.KEYCLOAK_URL,
+    realm: process.env.KEYCLOAK_REALM,
+    clientId: process.env.KEYCLOAK_CLIENTID,
+});
 
 interface AppContext {
     keycloak: KeycloakInstance;
