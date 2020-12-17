@@ -93,48 +93,62 @@ import {getAppContext} from "@/main";
     const tokenRefresh = localStorage.getItem("vue-refresh-token");
     const keycloak = this.keycloak() as KeycloakInstance;
 
-    keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((auth: boolean) => {
-      if (this.keycloak().authenticated) {
-        console.log("authenticated");
-        localStorage.setItem("vue-token", this.keycloak().token);
-        localStorage.setItem("vue-refresh-token", this.keycloak().refreshToken);
-
-        axios.interceptors.request.use(config => {
-          config.headers.Authorization = `Bearer ${this.keycloak().token}`
-          return config
-        }, error => {
-          return Promise.reject(error)
-        })
-
-        keycloak.loadUserProfile().then(user => {
-          this.userProfile = user;
-          this.userProfile.picture = (user as any).attributes.picture[0];
-          this.logged = true;
-
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          Api.userLogged({id: keycloak.subject!, name: user.username!, email: user.email!, contact: "", last_logged: 0})
-              .then(response => {
-                getAppContext().user = response.data;
-                this.user = response.data;
-              });
-        }).catch(err => console.error(err))
-
-        setInterval(() => {
-          keycloak.updateToken(70).then((success: boolean) => {
-            if(success) {
-              localStorage.setItem("vue-token", this.keycloak().token);
-              localStorage.setItem("vue-refresh-token", this.keycloak().refreshToken);
-            }
-          });
-
-        }, 60000);
-      } else {
+    keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((authenticated: boolean) => {
+      if(!authenticated) {
+        console.log("NOT authenticated");
         localStorage.removeItem("vue-token");
         localStorage.removeItem("vue-refresh-token");
+        this.initStateFromUrl();
+        return;
+      }
+
+
+      console.log("Authenticated");
+      // Check if our Access token is invalid, do a login if it has expired
+      if(keycloak.isTokenExpired()) {
+        keycloak.login();
       }
 
       this.initStateFromUrl();
-    }).catch(err => console.error(err));
+      localStorage.setItem("vue-token", keycloak.token!);
+      localStorage.setItem("vue-refresh-token", keycloak.refreshToken!);
+
+      axios.interceptors.request.use(config => {
+        config.headers.Authorization = `Bearer ${this.keycloak().token}`
+        return config
+      }, error => {
+        return Promise.reject(error)
+      })
+
+      keycloak.loadUserProfile().then(async user => {
+        this.userProfile = user;
+        this.userProfile.picture = (user as any).attributes.picture[0];
+        this.logged = true;
+
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        const UserResponse = await Api.userLogged({id: keycloak.subject!, name: user.username!, email: user.email!, contact: "", last_logged: 0});
+        getAppContext().user = UserResponse.data;
+        this.user = UserResponse.data;
+      }).catch(err => {
+        console.error("Cannot retrieve User profile");
+        console.error(err);
+      });
+
+      setInterval(() => {
+        keycloak.updateToken(70).then((success: boolean) => {
+          if(success) {
+            localStorage.setItem("vue-token", this.keycloak().token);
+            localStorage.setItem("vue-refresh-token", this.keycloak().refreshToken);
+          }
+        }).catch(err => {
+          console.error("cannot refresh auth token");
+          console.error(err);
+      });
+      }, 60 * 1000);
+    }).catch(err => {
+      console.error("Cannot check sso-login");
+      console.error(err);
+    });
   },
   beforeUpdate() {
     const findEvent = (_.isNil(this.searchEvent) || _.isEmpty(this.searchEvent)) ? '' : 'findEvent=' + encodeURI(this.searchEvent);
