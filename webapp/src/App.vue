@@ -93,7 +93,7 @@ import {getAppContext} from "@/main";
     const tokenRefresh = localStorage.getItem("vue-refresh-token");
     const keycloak = this.keycloak() as KeycloakInstance;
 
-    keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((authenticated: boolean) => {
+    keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then(async (authenticated: boolean) => {
       if(!authenticated) {
         console.log("NOT authenticated");
         localStorage.removeItem("vue-token");
@@ -106,7 +106,9 @@ import {getAppContext} from "@/main";
       console.log("Authenticated");
       // Check if our Access token is invalid, do a login if it has expired
       if(keycloak.isTokenExpired()) {
-        keycloak.login();
+        console.log("Token Expired");
+        //keycloak.login();
+        await keycloak.updateToken(0);
       }
 
       this.initStateFromUrl();
