@@ -145,7 +145,7 @@ import {getAppContext} from "@/main";
     createTrade(ev: MouseEvent) {
       ev.preventDefault();
       const keycloak = getAppContext().keycloak;
-      if (!keycloak.authenticated) {
+      if (!keycloak.authenticated || _.isNil(getAppContext().user)) {
         keycloak.login();
       }
       this.displayAddTrade = true;

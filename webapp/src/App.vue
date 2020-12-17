@@ -95,6 +95,7 @@ import {getAppContext} from "@/main";
 
     keycloak.init({onLoad: "check-sso", token: token!, refreshToken: tokenRefresh!}).then((auth: boolean) => {
       if (this.keycloak().authenticated) {
+        console.log("authenticated");
         localStorage.setItem("vue-token", this.keycloak().token);
         localStorage.setItem("vue-refresh-token", this.keycloak().refreshToken);
 
@@ -133,7 +134,7 @@ import {getAppContext} from "@/main";
       }
 
       this.initStateFromUrl();
-    });
+    }).catch(err => console.error(err));
   },
   beforeUpdate() {
     const findEvent = (_.isNil(this.searchEvent) || _.isEmpty(this.searchEvent)) ? '' : 'findEvent=' + encodeURI(this.searchEvent);

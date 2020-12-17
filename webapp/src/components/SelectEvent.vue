@@ -77,6 +77,7 @@ import * as Api from "@/api";
 import _ from "lodash";
 import {KeycloakInstance} from "keycloak-js";
 import { PropType } from 'vue';
+import {getAppContext} from "@/main";
 
 @Options({
   components: {
@@ -98,7 +99,7 @@ import { PropType } from 'vue';
     async createEvent(ev: MouseEvent) {
       ev.preventDefault();
       const keycloak = this.keycloak() as KeycloakInstance;
-      if (!keycloak.authenticated) {
+      if (!keycloak.authenticated || _.isNil(getAppContext().user)) {
         keycloak.login();
       }
       this.displayAddEvent = true;
