@@ -21,12 +21,23 @@ spec:
       - name: postgres
         image: postgres:13.1-alpine
         imagePullPolicy: IfNotPresent
+        args: ["-c", "random_page_cost=1.0"]
         env:
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: postgres-secret
               key: password
+        - name: RUNTRADE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secret
+              key: runtradePassword
+        - name: RUNTRADE_USER
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secret
+              key: runtradeUser
         - name: KEYCLOAK_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -64,6 +75,8 @@ spec:
                 psql -U postgres -c "create database keycloak ;";
                 psql -U postgres -c "create user ${KEYCLOAK_USER} with password '${KEYCLOAK_PASSWORD}' ;";
                 psql -U postgres -c "grant all privileges on database keycloak to ${KEYCLOAK_USER} ;";
+                psql -U postgres -c "create user ${RUNTRADE_USER} with password '${RUNTRADE_PASSWORD}' ;";
+                psql -U postgres -c "grant all privileges on database runtrade to ${RUNTRADE_USER} ;";
       volumes:
       - name: data
         hostPath:
