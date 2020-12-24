@@ -111,6 +111,8 @@ export function eventTypeToSvgIconPath(eventType: string) {
             return '/icons/trail.svg'
         case 'bike':
             return '/icons/bike.svg'
+        case 'triathlon':
+            return '/icons/triathlon.svg'
         default:
             return '/icons/other.svg'
     }

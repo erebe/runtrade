@@ -48,9 +48,10 @@
               <img class="icon-event-type"
                    v-bind:src="eventTypeToSvgIcon(event.event_type)"
                    v-bind:title="event.event_type"/>
+              <span class="d-none">{{ event.event_type }}</span>
             </td>
-            <td v-bind:data-eventid="event.id">{{ event.name }}</td>
-            <td v-bind:data-eventid="event.id">{{ event.localisation }}</td>
+            <td v-bind:data-eventid="event.id">{{ capitalize(event.name) }}</td>
+            <td v-bind:data-eventid="event.id">{{ capitalize(event.localisation) }}</td>
             <td v-bind:data-eventid="event.id">{{ formatDate(event.event_date) }}</td>
             <td v-bind:data-eventid="event.id">
               <a rel="noopener noreferrer" target="_blank" v-bind:href="event.event_link">Official website</a>
@@ -96,6 +97,9 @@ import {getAppContext} from "@/main";
     }
   },
   methods: {
+    capitalize(str: string): string {
+      return _.capitalize(str);
+    },
     async createEvent(ev: MouseEvent) {
       ev.preventDefault();
       const keycloak = this.keycloak() as KeycloakInstance;
