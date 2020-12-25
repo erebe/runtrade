@@ -31,6 +31,7 @@
     <!--    STEP III-->
     <Trade v-if="displayTrade" :event="event" v-model:inscriptions="inscriptions" :user="user"></Trade>
   </div>
+  <div id="snail" class="d-none d-md-block"><img src="/images/snail.png"/></div>
 </template>
 
 <script lang="ts">
@@ -194,5 +195,18 @@ html {
   width: 50px;
   height: 50px;
   border-radius: 50%;
+}
+
+#snail {
+  position: absolute;
+  animation: 120s linear 1s infinite running slidein;
+  overflow: hidden;
+  right: 105%;
+  bottom: 0;
+}
+
+@keyframes slidein {
+  from { right: 105%; bottom:0;}
+  to   { right: 0; bottom:0;}
 }
 </style>
