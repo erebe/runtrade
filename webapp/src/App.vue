@@ -200,7 +200,7 @@ html {
 
 #snail {
   position: absolute;
-  animation: 120s linear 1s infinite running slidein;
+  animation: 120s linear 1s 1 running slidein;
   overflow: hidden;
   right: 105%;
   bottom: 0;
