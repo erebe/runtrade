@@ -32,6 +32,7 @@
     <Trade v-if="displayTrade" :event="event" v-model:inscriptions="inscriptions" :user="user"></Trade>
   </div>
   <div id="snail" class="d-none d-md-block"><img src="/images/snail.png"/></div>
+  <div id="bird" class="d-none d-md-block"><img src="/images/bird.png"/></div>
 </template>
 
 <script lang="ts">
@@ -208,5 +209,21 @@ html {
 @keyframes slidein {
   from { right: 105%; bottom:0;}
   to   { right: 0; bottom:0;}
+}
+
+#bird {
+  position: absolute;
+  animation: 3s linear 30s 1 running fly forwards;
+  overflow: hidden;
+  right: 0;
+  bottom: 100%;
+}
+
+@keyframes fly {
+  0% { right: 0%; bottom: 100%;}
+  25% { right: 5%; }
+  50% { right: 0%; }
+  75% { right: 5%; }
+  100%   { right: 2%; bottom: 72%; }
 }
 </style>
