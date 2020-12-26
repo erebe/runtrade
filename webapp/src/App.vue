@@ -33,6 +33,8 @@
   </div>
   <div id="snail" class="d-none d-md-block"><img src="/images/snail.png"/></div>
   <div id="bird" class="d-none d-md-block"><img src="/images/bird.png"/></div>
+  <div id="squirrel" class="d-none d-md-block"><img src="/images/squirrel.png"/></div>
+  <div id="finish" class="d-none d-md-block"><img src="/images/finish.png"/></div>
 </template>
 
 <script lang="ts">
@@ -226,4 +228,29 @@ html {
   75% { right: 5%; }
   100%   { right: 2%; bottom: 72%; }
 }
+
+
+#squirrel {
+  position: absolute;
+  animation: 2s linear 18s 1 running appear forwards;
+  left: -5%;
+  bottom: 8%;
+}
+@keyframes appear {
+  from {
+    left: -5%;
+    bottom: 8%;
+  }
+  to  {
+    left: 0%;
+    bottom: 8%;
+  }
+}
+
+#finish {
+  position: absolute;
+  right: 0%;
+  bottom: 0%;
+}
+
 </style>
