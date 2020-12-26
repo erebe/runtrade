@@ -207,6 +207,7 @@ html {
   overflow: hidden;
   right: 105%;
   bottom: 0;
+  z-index: -1;
 }
 
 @keyframes slidein {
@@ -220,6 +221,7 @@ html {
   overflow: hidden;
   right: 0;
   bottom: 100%;
+  z-index: -1;
 }
 
 @keyframes fly {
@@ -236,6 +238,7 @@ html {
   animation: 2s linear 18s 1 running appear forwards;
   left: -5%;
   bottom: 8%;
+  z-index: -1;
 }
 @keyframes appear {
   from { left: -5%; bottom: 8%; }
@@ -246,6 +249,7 @@ html {
   position: absolute;
   right: 0%;
   bottom: 0%;
+  z-index: -1;
 }
 
 #mole {
@@ -254,6 +258,7 @@ html {
   bottom: 0;
   animation: 2s linear 100s 1 running mole forwards;
   opacity: 0;
+  z-index: -1;
 }
 
 @keyframes mole {
