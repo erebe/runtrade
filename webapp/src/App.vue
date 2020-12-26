@@ -218,20 +218,19 @@ html {
 #bird {
   position: absolute;
   animation: 3s linear 30s 1 running fly forwards;
-  overflow: hidden;
-  right: 0;
-  bottom: 100%;
+  right: 2%;
+  bottom: 72%;
+  opacity: 0;
   z-index: -1;
 }
 
 @keyframes fly {
-  0% { right: 0%; bottom: 100%;}
-  25% { right: 5%; }
-  50% { right: 0%; }
-  75% { right: 5%; }
-  100%   { right: 2%; bottom: 72%; }
+  0% { right: 0; bottom: 100%; opacity: 100;}
+  25% { right: 5%; opacity: 100}
+  50% { right: 0; opacity: 100 }
+  75% { right: 5%; opacity: 100}
+  100%   { right: 2%; bottom: 72%; opacity: 100 }
 }
-
 
 #squirrel {
   position: absolute;
@@ -242,13 +241,13 @@ html {
 }
 @keyframes appear {
   from { left: -5%; bottom: 8%; }
-  to  { left: 0%; bottom: 8%; }
+  to  { left: 0; bottom: 8%; }
 }
 
 #finish {
   position: absolute;
-  right: 0%;
-  bottom: 0%;
+  right: 0;
+  bottom: 0;
   z-index: -1;
 }
 
@@ -262,7 +261,7 @@ html {
 }
 
 @keyframes mole {
-  from {  bottom: -10%; opacity: 0}
-  to   {  bottom: 0%; opacity: 100%}
+  from {  bottom: -10%; opacity: 0;}
+  to   {  bottom: 0; opacity: 100;}
 }
 </style>
