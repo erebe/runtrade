@@ -31,10 +31,11 @@
     <!--    STEP III-->
     <Trade v-if="displayTrade" :event="event" v-model:inscriptions="inscriptions" :user="user"></Trade>
   </div>
-  <div id="snail" class="d-none d-md-block"><img src="/images/snail.png"/></div>
-  <div id="bird" class="d-none d-md-block"><img src="/images/bird.png"/></div>
-  <div id="squirrel" class="d-none d-md-block"><img src="/images/squirrel.png"/></div>
-  <div id="finish" class="d-none d-md-block"><img src="/images/finish.png"/></div>
+  <div id="snail" class="d-none d-md-block"><img src="/images/snail.webp"/></div>
+  <div id="bird" class="d-none d-md-block"><img src="/images/bird.webp"/></div>
+  <div id="squirrel" class="d-none d-md-block"><img src="/images/squirrel.webp"/></div>
+  <div id="finish" class="d-none d-md-block"><img src="/images/finish.webp"/></div>
+  <div id="mole" class="d-none d-md-block"><img src="/images/mole.webp"/></div>
 </template>
 
 <script lang="ts">
@@ -237,14 +238,8 @@ html {
   bottom: 8%;
 }
 @keyframes appear {
-  from {
-    left: -5%;
-    bottom: 8%;
-  }
-  to  {
-    left: 0%;
-    bottom: 8%;
-  }
+  from { left: -5%; bottom: 8%; }
+  to  { left: 0%; bottom: 8%; }
 }
 
 #finish {
@@ -253,4 +248,16 @@ html {
   bottom: 0%;
 }
 
+#mole {
+  position: absolute;
+  right: 25%;
+  bottom: 0;
+  animation: 2s linear 100s 1 running mole forwards;
+  opacity: 0;
+}
+
+@keyframes mole {
+  from {  bottom: -10%; opacity: 0}
+  to   {  bottom: 0%; opacity: 100%}
+}
 </style>
