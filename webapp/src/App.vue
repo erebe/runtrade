@@ -4,7 +4,20 @@
           <img width="60px" height="60px" src="/favicon.png" id="logo">
       </span>
     <h5 class="my-0 mr-md-auto font-weight-normal">RunTrade </h5>
-    <span id="signin-logo"><img height="55px" width="99px" src="/images/header.webp"></span>
+    <span id="signin-logo">
+      <button class="m-0 p-0 border-0"
+           data-container="body" data-toggle="popover" data-html="true" data-placement="left"
+           data-content="Design assets are thanks to <br/>
+      <a class='text-nowrap' href='https://www.freepik.com/vectors/nature'>Nature vector created by pch.vector</a><br/>
+      <a class='text-nowrap' href='https://www.freepik.com/vectors/people'>People vector created by pch.vector</a><br/>
+      <a class='text-nowrap' href='https://www.freepik.com/vectors/medical'>Medical vector created by freepik</a><br/>
+      <a class='text-nowrap' href='https://www.freepik.com/vectors/background'>Background vector created by tartila</a><br/>
+      <a class='text-nowrap' href='https://www.freepik.com/vectors/sport'>Sport vector created by macrovector</a><br/>
+      <a class='text-nowrap' href='https://www.freepik.com/vectors/banner'>Banner vector created by katemangostar</a><br/>
+      <a class='text-nowrap' href='https://fr.freepik.com/vectors/nature'>Nature vecteur créé par freepik</a><br/>
+      <a class='text-nowrap' href='https://fr.freepik.com/vectors/nouvel-an'>Nouvel an vecteur créé par freepik</a><br/>
+      "><img height="55px" width="100px" src="/images/header.webp"></button>
+    </span>
     <nav class="my-2 my-md-0 mr-md-3">
 <!--      <a class="p-2 text-dark" href="#">Your trades</a>-->
     </nav>
@@ -31,11 +44,12 @@
     <!--    STEP III-->
     <Trade v-if="displayTrade" :event="event" v-model:inscriptions="inscriptions" :user="user"></Trade>
   </div>
-  <div id="snail" class="d-none d-md-block"><img src="/images/snail.webp"/></div>
-  <div id="bird" class="d-none d-md-block"><img src="/images/bird.webp"/></div>
-  <div id="squirrel" class="d-none d-md-block"><img src="/images/squirrel.webp"/></div>
-  <div id="finish" class="d-none d-md-block"><img src="/images/finish.webp"/></div>
-  <div id="mole" class="d-none d-md-block"><img src="/images/mole.webp"/></div>
+  <div class="d-none d-lg-block" id="snail"><img src="/images/snail.webp"/></div>
+  <div class="d-none d-lg-block" id="bird"><img src="/images/bird.webp"/></div>
+  <div class="d-none d-lg-block" id="squirrel"><img src="/images/squirrel.webp"/></div>
+  <div class="d-none d-lg-block" id="finish"><img src="/images/finish.webp"/></div>
+  <div class="d-none d-lg-block" id="mole" ><img src="/images/mole.webp"/></div>
+  <div class="d-none d-lg-block" id="ballon"><img src="/images/ballon.webp"/></div>
 </template>
 
 <script lang="ts">
@@ -48,6 +62,8 @@ import axios from 'axios';
 import {KeycloakInstance} from "keycloak-js";
 import * as Api from "@/api";
 import {getAppContext} from "@/main";
+import $ from "jquery";
+import {Popover} from "bootstrap";
 
 @Options({
   components: {
@@ -92,6 +108,11 @@ import {getAppContext} from "@/main";
       }
 
     },
+  },
+  mounted() {
+    $('#signin-logo [data-toggle="popover"]').get().forEach((el) => {
+      (el as any).popover = new Popover(el, {trigger: "focus"});
+    });
   },
   created() {
     const token = localStorage.getItem("vue-token");
@@ -263,5 +284,21 @@ html {
 @keyframes mole {
   from {  bottom: -10%; opacity: 0;}
   to   {  bottom: 0; opacity: 100;}
+}
+
+#ballon {
+  position: absolute;
+  right: 25px;
+  bottom: 50px;
+  opacity: 0;
+  z-index: -1;
+  animation: 3s linear 120s 1 running ballon;
+}
+
+@keyframes ballon {
+  from {  bottom: 50px; opacity: 0;}
+  25% {  opacity: 100;}
+  75% {  opacity: 100;}
+  to  {  bottom: 400px; opacity: 0;}
 }
 </style>
