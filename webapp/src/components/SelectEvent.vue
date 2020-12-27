@@ -94,6 +94,7 @@ import {getAppContext} from "@/main";
       retrievingEvent: false,
       displayAddEvent: false,
       selectedEvent: null,
+      destroyTable: true,
     }
   },
   methods: {
@@ -119,6 +120,7 @@ import {getAppContext} from "@/main";
       }
 
       ev?.preventDefault();
+
       const eventId = _.isNil(ev)
           ? this.events[0].id
           : parseInt((ev.target as HTMLTableCellElement).dataset.eventid!);
@@ -147,8 +149,11 @@ import {getAppContext} from "@/main";
       return Api.eventTypeToSvgIconPath(eventType)
     },
     init() {
-      feather.replace();
-      this.datatable = $('#events').DataTable({pageLength: 10, deferRender: true});
+      if(this.destroyTable) {
+        this.datatable = $('#events').DataTable({pageLength: 10, deferRender: true});
+        feather.replace();
+        this.destroyTable = false;
+      }
     }
   },
   async mounted() {
@@ -160,11 +165,20 @@ import {getAppContext} from "@/main";
   }
   ,
   beforeUpdate() {
-    this.datatable.destroy();
-    this.datatable = null;
+    if(this.destroyTable) {
+      this.datatable.destroy();
+      this.datatable = null;
+    }
   },
   updated() {
     this.init();
+  },
+  watch: {
+    events: function (newVal, oldVal) {
+      if(newVal !== oldVal) {
+        this.destroyTable = true;
+      }
+    }
   }
 })
 export default class SelectEvent extends Vue {

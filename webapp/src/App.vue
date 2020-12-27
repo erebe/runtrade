@@ -185,8 +185,6 @@ import {Popover} from "bootstrap";
         .replace(/#&/, '#')
         .replace(/&$/, '');
     history.pushState(null, "Runtrade", path);
-  },
-  updated() {
     this.displaySelectEvent = (!_.isNil(this.events));
     this.displayTrade = (!_.isNil(this.event) && !_.isNil(this.inscriptions));
   },
